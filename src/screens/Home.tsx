@@ -153,7 +153,7 @@ function NavButton({ dir, enabled, onPress }: { dir: 'left' | 'right'; enabled: 
 
 const styles = StyleSheet.create({
   header: { alignItems: 'center', height: undefined },
-  date: { color: C.ink, fontSize: 24, fontFamily: FONT[700], letterSpacing: -0.6 },
+  date: { color: C.ink, fontSize: 21, fontFamily: FONT[700], letterSpacing: -0.6 },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
   sub: { color: C.ink2, fontSize: 14, fontFamily: FONT[500] },
   subDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: C.muted },

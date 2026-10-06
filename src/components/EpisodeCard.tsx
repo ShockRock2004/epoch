@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   tagDot: { width: 4, height: 4, borderRadius: 2 },
   badge: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.4, borderColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' },
   badgeDone: { backgroundColor: C.good, borderColor: C.good },
-  name: { color: C.ink, fontSize: 24, fontFamily: FONT[700], lineHeight: 28, marginTop: 10, letterSpacing: -0.5 },
+  name: { color: C.ink, fontSize: 21, fontFamily: FONT[700], lineHeight: 27, marginTop: 10, letterSpacing: -0.6 },
   sub: { color: C.ink2, fontFamily: FONT[400], fontSize: 13.5, lineHeight: 19, marginTop: 6 },
   subDim: { color: C.muted },
   list: { marginTop: 12, gap: 6 },

@@ -243,7 +243,7 @@ export function Search({ bottomPad }: { bottomPad: number }) {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  title: { color: C.ink, fontSize: 28, fontFamily: FONT[800], letterSpacing: -0.5 },
+  title: { color: C.ink, fontSize: 26, fontFamily: FONT[700], letterSpacing: -0.8 },
   count: { color: C.muted, fontFamily: FONT[400], fontSize: 13, fontVariant: ['tabular-nums'] },
   searchRow: { flexDirection: 'row', gap: 10 },
   inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, height: 48 },

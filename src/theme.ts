@@ -25,13 +25,14 @@ export const C = {
 export const BG_GRADIENT = ['#03070B', '#061722', '#0A2E3B', '#0D4150'] as const;
 export const BG_LOCATIONS = [0, 0.38, 0.78, 1] as const;
 
-/** Bricolage Grotesque, embedded at build time (one family name per weight on Android). */
+/** Sora, embedded at build time (one family name per weight on Android). Clean geometric, light-handed. */
 export const FONT = {
-  400: 'BricolageGrotesque_400Regular',
-  500: 'BricolageGrotesque_500Medium',
-  600: 'BricolageGrotesque_600SemiBold',
-  700: 'BricolageGrotesque_700Bold',
-  800: 'BricolageGrotesque_800ExtraBold',
+  400: 'Sora_400Regular',
+  500: 'Sora_500Medium',
+  600: 'Sora_600SemiBold',
+  700: 'Sora_600SemiBold', // Sora runs heavy; semibold reads as bold and stays elegant
+  800: 'Sora_700Bold',
+  300: 'Sora_300Light',
 } as const;
 
 export const PHASE_COLOR: Record<Phase, string> = {

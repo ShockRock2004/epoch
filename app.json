@@ -36,11 +36,11 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/BricolageGrotesque_400Regular.ttf",
-            "./assets/fonts/BricolageGrotesque_500Medium.ttf",
-            "./assets/fonts/BricolageGrotesque_600SemiBold.ttf",
-            "./assets/fonts/BricolageGrotesque_700Bold.ttf",
-            "./assets/fonts/BricolageGrotesque_800ExtraBold.ttf"
+            "./assets/fonts/Sora_300Light.ttf",
+            "./assets/fonts/Sora_400Regular.ttf",
+            "./assets/fonts/Sora_500Medium.ttf",
+            "./assets/fonts/Sora_600SemiBold.ttf",
+            "./assets/fonts/Sora_700Bold.ttf"
           ]
         }
       ]

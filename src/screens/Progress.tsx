@@ -172,7 +172,7 @@ export function Progress({ bottomPad }: { bottomPad: number }) {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: C.ink, fontSize: 28, fontFamily: FONT[800], letterSpacing: -0.5 },
+  title: { color: C.ink, fontSize: 26, fontFamily: FONT[700], letterSpacing: -0.8 },
   gear: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   card: { padding: 16 },
   cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
