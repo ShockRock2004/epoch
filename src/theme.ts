@@ -1,37 +1,51 @@
 import type { Phase } from './data/plan';
 
 export const C = {
-  bg: '#0A0E1A',
-  bg2: '#141B2E',
-  ink: '#F2F4FF',
-  ink2: '#C9CEE6',
-  muted: '#8A91AD',
-  faint: '#545B78',
+  bg: '#03080B',
+  bg2: '#0B3A47',
+  ink: '#F2F6FA',
+  ink2: '#C6D3DE',
+  muted: '#8498A8',
+  faint: '#536677',
   line: 'rgba(255,255,255,0.10)',
   line2: 'rgba(255,255,255,0.18)',
   glass: 'rgba(255,255,255,0.06)',
   glassHi: 'rgba(255,255,255,0.10)',
-  glassDeep: 'rgba(14,18,34,0.72)',
-  accent: '#8B93FF',
-  accent2: '#6C74F0',
-  accentWash: 'rgba(139,147,255,0.16)',
-  good: '#5CE0A0',
-  goodWash: 'rgba(92,224,160,0.14)',
+  glassDeep: 'rgba(8,20,30,0.72)',
+  accent: '#9CC8FF',
+  accent2: '#6EA8F5',
+  accentInk: '#08121F',
+  accentWash: 'rgba(156,200,255,0.16)',
+  good: '#F2F6FA', // 'done' is white; no green anywhere
+  goodWash: 'rgba(200,222,255,0.14)',
   warn: '#FFB25C',
 };
 
+/** Background: near-black at the top, deep teal at the bottom. */
+export const BG_GRADIENT = ['#03070B', '#061722', '#0A2E3B', '#0D4150'] as const;
+export const BG_LOCATIONS = [0, 0.38, 0.78, 1] as const;
+
+/** Bricolage Grotesque, embedded at build time (one family name per weight on Android). */
+export const FONT = {
+  400: 'BricolageGrotesque_400Regular',
+  500: 'BricolageGrotesque_500Medium',
+  600: 'BricolageGrotesque_600SemiBold',
+  700: 'BricolageGrotesque_700Bold',
+  800: 'BricolageGrotesque_800ExtraBold',
+} as const;
+
 export const PHASE_COLOR: Record<Phase, string> = {
-  1: '#6FA8FF',
-  2: '#B08BFF',
-  3: '#FF9F5A',
-  4: '#5CE0A0',
-  5: '#FF7FA8',
+  1: '#7DB4FF',
+  2: '#B79CFF',
+  3: '#FFA866',
+  4: '#FFD36E',
+  5: '#FF8DB3',
 };
 
 // Ring colours, outer → inner, per cluster (Apple-Fitness-like saturation on navy).
 export const RING_COLORS = [
-  ['#FF4F7B', '#9BFF4F', '#4FD8FF', '#FFC24F'],
-  ['#B08BFF', '#FF9F5A', '#5CE0A0', '#FF7FA8'],
+  ['#F2F6FA', '#9CC8FF', '#B79CFF', '#FFD36E'],
+  ['#B79CFF', '#FFA866', '#FF8DB3', '#9CC8FF'],
 ];
 
 export const R = { sm: 10, md: 14, lg: 18, xl: 22, pill: 999 };

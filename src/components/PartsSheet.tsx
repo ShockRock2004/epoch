@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Episode } from '../data/plan';
-import { C, R, fmtClock } from '../theme';
+import { C, R, fmtClock, FONT } from '../theme';
 import { GlassView } from './GlassView';
 import { IconPlay } from './Icons';
 import { openSeg } from '../lib/youtube';
@@ -50,10 +50,10 @@ const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12 },
   sheet: { padding: 18, paddingTop: 10 },
   grab: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: C.line2, marginBottom: 12 },
-  eyebrow: { color: C.muted, fontSize: 12, fontWeight: '600' },
-  title: { color: C.ink, fontSize: 19, fontWeight: '700', marginTop: 4 },
+  eyebrow: { color: C.muted, fontSize: 12, fontFamily: FONT[600] },
+  title: { color: C.ink, fontSize: 19, fontFamily: FONT[700], marginTop: 4 },
   part: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: R.md, backgroundColor: 'rgba(255,255,255,0.06)' },
   play: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.accent2, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
-  partTitle: { color: C.ink, fontSize: 14, fontWeight: '600', lineHeight: 19 },
-  partMeta: { color: C.muted, fontSize: 12.5, marginTop: 2, fontVariant: ['tabular-nums'] },
+  partTitle: { color: C.ink, fontSize: 14, fontFamily: FONT[600], lineHeight: 19 },
+  partMeta: { color: C.muted, fontFamily: FONT[400], fontSize: 12.5, marginTop: 2, fontVariant: ['tabular-nums'] },
 });

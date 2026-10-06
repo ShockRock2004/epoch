@@ -2,15 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODES, Episode, PHASES, Phase } from '../data/plan';
-import { TOPIC_LABEL } from '../components/illustrations';
+import { TOPIC_LABEL, TopicGlyph } from '../components/illustrations';
 import { useStore } from '../lib/store';
 import { todayView } from '../lib/schedule';
-import { C, PHASE_COLOR, R, alpha, fmtMins } from '../theme';
+import { C, PHASE_COLOR, R, alpha, fmtMins, FONT } from '../theme';
 import { GlassView } from '../components/GlassView';
 import { EpisodeCard } from '../components/EpisodeCard';
-import { PartsSheet } from '../components/PartsSheet';
 import { IconCheck, IconChevron, IconFilter, IconSearch, IconX } from '../components/Icons';
-import { openSeg } from '../lib/youtube';
 import { haptic } from '../lib/haptics';
 
 type Status = 'all' | 'todo' | 'done' | 'today';
@@ -68,7 +66,6 @@ export function Search({ bottomPad }: { bottomPad: number }) {
   const [sort, setSort] = useState<Sort>('plan');
   const [sheet, setSheet] = useState(false);
   const [open, setOpen] = useState<Episode | null>(null);
-  const [parts, setParts] = useState<Episode | null>(null);
 
   const query = q.trim().toLowerCase();
   const todays = todayView(p, today).shown;
@@ -93,7 +90,6 @@ export function Search({ bottomPad }: { bottomPad: number }) {
   }, [query, phase, status, kind, len, sort, p.done, todays.join()]);
 
   const clear = () => { setQ(''); setPhase(0); setStatus('all'); setKind('all'); setLen('all'); setSort('plan'); };
-  const onWatch = (ep: Episode) => (ep.segs.length > 1 ? setParts(ep) : openSeg(ep.segs[0]));
 
   const header = (
     <View style={{ paddingTop: insets.top + 14, gap: 12 }}>
@@ -159,8 +155,10 @@ export function Search({ bottomPad }: { bottomPad: number }) {
             <Pressable onPress={() => { haptic.nav(); setOpen(e); }} accessibilityRole="button" accessibilityLabel={`Episode ${e.n}: ${e.name}`}>
               {({ pressed }) => (
                 <GlassView radius={R.lg} style={[styles.row, pressed && { opacity: 0.8 }]}>
-                  <View style={[styles.num, { borderColor: alpha(PHASE_COLOR[e.phase], 0.7) }, done && styles.numDone]}>
-                    {done ? <IconCheck size={15} color={C.bg} strokeWidth={3} /> : <Text style={styles.numText}>{e.n}</Text>}
+                  <View style={[styles.tile, { backgroundColor: alpha(PHASE_COLOR[e.phase], 0.10), borderColor: alpha(PHASE_COLOR[e.phase], 0.28) }]}>
+                    <TopicGlyph topic={e.topic} size={22} color={PHASE_COLOR[e.phase]} />
+                    <Text style={styles.tileNum}>{e.n}</Text>
+                    {done && <View style={styles.tileDone}><IconCheck size={10} color={C.bg} strokeWidth={3.4} /></View>}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Highlight text={e.name} q={query} style={[styles.rowName, done && { color: C.ink2 }]} lines={1} />
@@ -199,11 +197,10 @@ export function Search({ bottomPad }: { bottomPad: number }) {
         <Pressable style={styles.scrim} onPress={() => setOpen(null)} accessibilityLabel="Close" />
         {open && (
           <View style={styles.detail} pointerEvents="box-none">
-            <EpisodeCard ep={open} done={!!p.done[open.n]} onToggle={toggle} onWatch={onWatch} wide height={340} />
+            <EpisodeCard ep={open} done={!!p.done[open.n]} onToggle={toggle} />
             <Text style={styles.detailHint}>Tap the card to flip · hold to mark {p.done[open.n] ? 'not done' : 'done'}</Text>
           </View>
         )}
-        <PartsSheet ep={parts} onClose={() => setParts(null)} />
       </Modal>
 
       {/* More filters */}
@@ -246,52 +243,55 @@ export function Search({ bottomPad }: { bottomPad: number }) {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  title: { color: C.ink, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-  count: { color: C.muted, fontSize: 13, fontVariant: ['tabular-nums'] },
+  title: { color: C.ink, fontSize: 28, fontFamily: FONT[800], letterSpacing: -0.5 },
+  count: { color: C.muted, fontFamily: FONT[400], fontSize: 13, fontVariant: ['tabular-nums'] },
   searchRow: { flexDirection: 'row', gap: 10 },
   inputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, height: 48 },
-  input: { flex: 1, color: C.ink, fontSize: 15.5, paddingVertical: 0 },
+  input: { flex: 1, color: C.ink, fontFamily: FONT[400], fontSize: 15.5, paddingVertical: 0 },
   filterBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   badge: { position: 'absolute', top: 7, right: 7, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: C.bg, fontSize: 10, fontWeight: '800' },
+  badgeText: { color: C.bg, fontSize: 10, fontFamily: FONT[800] },
   chips: { gap: 8, paddingRight: 16 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 13, height: 34, borderRadius: R.pill, borderWidth: 1, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.04)' },
   chipOn: { backgroundColor: C.ink, borderColor: C.ink },
-  chipText: { color: C.ink2, fontSize: 13.5, fontWeight: '600' },
+  chipText: { color: C.ink2, fontSize: 13.5, fontFamily: FONT[600] },
   chipTextOn: { color: C.bg },
   dot: { width: 8, height: 8, borderRadius: 4 },
   segment: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: R.md, padding: 3, borderWidth: 1, borderColor: C.line },
   segBtn: { flex: 1, height: 34, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center' },
-  segOn: { backgroundColor: 'rgba(139,147,255,0.25)' },
-  segText: { color: C.muted, fontSize: 13.5, fontWeight: '600' },
+  segOn: { backgroundColor: 'rgba(156,200,255,0.22)' },
+  segText: { color: C.muted, fontSize: 13.5, fontFamily: FONT[600] },
   segTextOn: { color: C.ink },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingRight: 14 },
   num: { width: 38, height: 38, borderRadius: 19, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  tile: { width: 50, height: 54, borderRadius: R.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  tileNum: { color: C.ink2, fontSize: 10.5, fontFamily: FONT[700], fontVariant: ['tabular-nums'], letterSpacing: 0.4 },
+  tileDone: { position: 'absolute', top: -5, right: -5, width: 18, height: 18, borderRadius: 9, backgroundColor: C.good, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.bg },
   numDone: { backgroundColor: C.good, borderColor: C.good },
-  numText: { color: C.ink, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  rowName: { color: C.ink, fontSize: 15.5, fontWeight: '700' },
-  rowSub: { color: C.muted, fontSize: 12.5, marginTop: 2 },
+  numText: { color: C.ink, fontSize: 14, fontFamily: FONT[700], fontVariant: ['tabular-nums'] },
+  rowName: { color: C.ink, fontSize: 15.5, fontFamily: FONT[700] },
+  rowSub: { color: C.muted, fontFamily: FONT[400], fontSize: 12.5, marginTop: 2 },
   rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
-  rowMetaText: { color: C.faint, fontSize: 12 },
-  todayTag: { color: C.accent, fontSize: 11, fontWeight: '700', marginLeft: 4, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, backgroundColor: C.accentWash, overflow: 'hidden' },
-  hit: { color: '#FFFFFF', backgroundColor: 'rgba(139,147,255,0.45)' },
+  rowMetaText: { color: C.faint, fontFamily: FONT[400], fontSize: 12 },
+  todayTag: { color: C.accent, fontSize: 11, fontFamily: FONT[700], marginLeft: 4, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, backgroundColor: C.accentWash, overflow: 'hidden' },
+  hit: { color: '#FFFFFF', backgroundColor: 'rgba(156,200,255,0.42)' },
   empty: { alignItems: 'center', paddingTop: 50, gap: 8 },
-  emptyTitle: { color: C.ink, fontSize: 17, fontWeight: '700', marginTop: 6 },
-  emptySub: { color: C.muted, fontSize: 13.5 },
+  emptyTitle: { color: C.ink, fontSize: 17, fontFamily: FONT[700], marginTop: 6 },
+  emptySub: { color: C.muted, fontFamily: FONT[400], fontSize: 13.5 },
   clearBtn: { marginTop: 10, paddingHorizontal: 18, height: 40, borderRadius: R.pill, backgroundColor: C.accentWash, justifyContent: 'center' },
-  clearText: { color: C.accent, fontWeight: '700' },
+  clearText: { color: C.accent, fontFamily: FONT[700] },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(4,6,14,0.72)' },
   detail: { flex: 1, justifyContent: 'center', paddingHorizontal: 20 },
-  detailHint: { color: C.muted, fontSize: 12.5, textAlign: 'center', marginTop: 14 },
+  detailHint: { color: C.muted, fontFamily: FONT[400], fontSize: 12.5, textAlign: 'center', marginTop: 14 },
   sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12 },
   sheet: { padding: 18, paddingTop: 10 },
   grab: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: C.line2, marginBottom: 12 },
-  sheetTitle: { color: C.ink, fontSize: 20, fontWeight: '800' },
-  sheetLabel: { color: C.muted, fontSize: 12.5, fontWeight: '700', marginTop: 16, marginBottom: 8, letterSpacing: 0.4, textTransform: 'uppercase' },
+  sheetTitle: { color: C.ink, fontSize: 20, fontFamily: FONT[800] },
+  sheetLabel: { color: C.muted, fontSize: 12.5, fontFamily: FONT[700], marginTop: 16, marginBottom: 8, letterSpacing: 0.4, textTransform: 'uppercase' },
   wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sheetActions: { flexDirection: 'row', gap: 10, marginTop: 22 },
   sheetGhost: { height: 48, paddingHorizontal: 20, borderRadius: R.md, borderWidth: 1, borderColor: C.line2, justifyContent: 'center' },
-  sheetGhostText: { color: C.ink2, fontWeight: '700', fontSize: 15 },
+  sheetGhostText: { color: C.ink2, fontFamily: FONT[700], fontSize: 15 },
   sheetPrimary: { flex: 1, height: 48, borderRadius: R.md, backgroundColor: C.accent2, alignItems: 'center', justifyContent: 'center' },
-  sheetPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  sheetPrimaryText: { color: '#fff', fontFamily: FONT[700], fontSize: 15 },
 });

@@ -1,152 +1,172 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing, FadeIn, FadeInLeft, FadeInRight, FadeOut, useAnimatedStyle, useSharedValue, withRepeat, withTiming,
+} from 'react-native-reanimated';
 import { BlurTargetView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EPISODES, Episode, TOTAL } from '../data/plan';
+import { EPISODES, TOTAL } from '../data/plan';
 import { useStore } from '../lib/store';
-import { dayNumber, todayView, PLAN_DAYS, MAX_REVEALS } from '../lib/schedule';
-import { C, R } from '../theme';
+import { dayNumber, PLAN_DAYS } from '../lib/schedule';
+import { C, R, FONT, BG_GRADIENT, BG_LOCATIONS } from '../theme';
 import { EpisodeCard } from '../components/EpisodeCard';
 import { GlassView } from '../components/GlassView';
-import { IconSpark, IconCheck } from '../components/Icons';
+import { IconChevron } from '../components/Icons';
 import { TopicArt, TOPIC_LABEL } from '../components/illustrations';
-import { PartsSheet } from '../components/PartsSheet';
-import { openSeg } from '../lib/youtube';
 import { haptic } from '../lib/haptics';
 
 const longDate = (k: string) => {
   const [y, m, d] = k.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+  const dt = new Date(y, m - 1, d);
+  const wd = dt.toLocaleDateString('en-GB', { weekday: 'long' });
+  return `${wd}, ${dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 };
 
+const ART = 232;
+
 export function Home({ bottomPad }: { bottomPad: number }) {
-  const { p, today, toggle, reveal } = useStore();
+  const { p, today, toggle } = useStore();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const target = useRef<View>(null);
-  const [parts, setParts] = useState<Episode | null>(null);
+  const [offset, setOffset] = useState(0); // pages of two episodes away from today
+  const [dir, setDir] = useState<1 | -1>(1);
 
-  const v = todayView(p, today);
-  const shown = v.shown.map(n => EPISODES[n - 1]);
-  const log = p.days[today] ?? { base: [], revealed: [] };
-  const pair = log.base.map(n => EPISODES[n - 1]);
-  const extra = log.revealed.map(n => EPISODES[n - 1]);
-  const focus = shown.find(e => !p.done[e.n]) ?? shown[shown.length - 1];
-  const topic = v.finishedPlan ? 'review' : focus?.topic ?? 'fundamentals';
+  // Today's pair is frozen for the day (carry-over included); arrows page through the plan from there.
+  const base = p.days[today]?.base ?? [];
+  const anchor = base[0] ?? TOTAL;
+  const start = Math.min(Math.max(anchor + 2 * offset, 1), TOTAL);
+  const nums = offset === 0 && base.length ? base : [start, start + 1].filter(n => n <= TOTAL);
+  const eps = nums.map(n => EPISODES[n - 1]);
+  const canPrev = nums[0] > 1;
+  const canNext = nums[nums.length - 1] < TOTAL;
+
+  const focus = eps.find(e => !p.done[e.n]) ?? eps[0];
+  const topic = focus?.topic ?? 'review';
   const day = dayNumber(p.start, today);
-  const doneCount = Object.keys(p.done).length;
+  const allDone = Object.keys(p.done).length >= TOTAL;
+  const todayDone = offset === 0 && base.length > 0 && base.every(n => p.done[n]);
 
-  const dayLine = day < 1
-    ? `Starts in ${-day} day${day === -1 ? '' : 's'} · ${TOPIC_LABEL[topic]}`
-    : `Day ${day}${day > PLAN_DAYS ? ' · Overtime' : ''} · ${TOPIC_LABEL[topic]}`;
+  const sub = offset === 0
+    ? day < 1
+      ? `Starts in ${-day} day${day === -1 ? '' : 's'}`
+      : `Day ${day}${day > PLAN_DAYS ? ' · Overtime' : ''}`
+    : offset > 0 ? 'Up next' : 'Earlier';
+
+  const go = (d: 1 | -1) => {
+    if ((d > 0 && !canNext) || (d < 0 && !canPrev)) return;
+    haptic.select();
+    setDir(d);
+    setOffset(o => o + d);
+  };
+
+  // Snap back to today when the day changes.
+  useEffect(() => { setOffset(0); }, [today]);
 
   const float = useSharedValue(0);
   useEffect(() => {
-    float.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }), -1, true);
+    float.value = withRepeat(withTiming(1, { duration: 3600, easing: Easing.inOut(Easing.sin) }), -1, true);
   }, [float]);
-  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -8 * float.value }] }));
+  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -6 * float.value }] }));
 
-  const onWatch = (ep: Episode) => (ep.segs.length > 1 ? setParts(ep) : openSeg(ep.segs[0]));
-
-  const artW = Math.min(width - 40, 340);
-  const artH = (artW * 220) / 300;
-  const headerH = insets.top + 76;
-  const cardH = 268;
-  const overlap = 56;
+  const heroTop = insets.top + 92;
+  const enter = (dir > 0 ? FadeInRight : FadeInLeft).duration(380).easing(Easing.out(Easing.cubic));
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: bottomPad + 24 }} showsVerticalScrollIndicator={false}>
-        {/* Everything the glass cards blur lives inside the target. */}
-        <BlurTargetView ref={target} style={[StyleSheet.absoluteFill, { height: headerH + artH + cardH + 40 }]}>
-          <LinearGradient colors={[C.bg, '#10162A', C.bg2]} style={StyleSheet.absoluteFill} />
-          <Animated.View style={[{ position: 'absolute', top: headerH, alignSelf: 'center' }, floatStyle]}>
-            <TopicArt topic={topic} width={artW} />
+      {/* Fixed layer: gradient and topic art. Cards scroll over it and blur it. */}
+      <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
+        <LinearGradient colors={BG_GRADIENT} locations={BG_LOCATIONS} style={StyleSheet.absoluteFill} />
+        <Animated.View style={[{ position: 'absolute', top: heroTop, alignSelf: 'center' }, floatStyle]}>
+          <Animated.View key={topic} entering={FadeIn.duration(420)} exiting={FadeOut.duration(200)}>
+            <TopicArt topic={topic} size={ART} />
           </Animated.View>
-        </BlurTargetView>
+        </Animated.View>
+      </BlurTargetView>
 
-        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: bottomPad + 24 }} showsVerticalScrollIndicator={false}>
+        <View style={[styles.header, { paddingTop: insets.top + 18 }]}>
           <Text style={styles.date}>{longDate(today)}</Text>
-          <Text style={styles.day}>{dayLine}</Text>
+          <View style={styles.subRow}>
+            <Text style={styles.sub}>{sub}</Text>
+            <View style={styles.subDot} />
+            <Text style={styles.subTopic}>{TOPIC_LABEL[topic]}</Text>
+          </View>
         </View>
 
-        <View style={{ height: artH - overlap }} />
+        {/* Arrows flank the topic art. */}
+        <View style={[styles.navRow, { height: ART - 36 }]}>
+          <NavButton dir="left" enabled={canPrev} onPress={() => go(-1)} />
+          <View style={{ flex: 1 }} />
+          <NavButton dir="right" enabled={canNext} onPress={() => go(1)} />
+        </View>
 
-        <View style={styles.body}>
-          {pair.length > 0 && (
-            <View style={styles.pair}>
-              {pair.map(ep => (
-                <EpisodeCard
-                  key={ep.n}
-                  ep={ep}
-                  done={!!p.done[ep.n]}
-                  onToggle={toggle}
-                  onWatch={onWatch}
-                  blurTarget={target}
-                  height={cardH}
-                />
-              ))}
-            </View>
+        <View style={styles.pageRow}>
+          <Text style={styles.pageLabel}>
+            {nums.length > 1 ? `EPISODES ${nums[0]}–${nums[nums.length - 1]}` : `EPISODE ${nums[0]}`}
+            <Text style={styles.pageOf}>  /  {TOTAL}</Text>
+          </Text>
+          {offset !== 0 && (
+            <Pressable onPress={() => { haptic.nav(); setDir(offset > 0 ? -1 : 1); setOffset(0); }} style={styles.todayChip} accessibilityRole="button">
+              <Text style={styles.todayChipText}>Back to today</Text>
+            </Pressable>
           )}
+        </View>
 
-          {extra.map(ep => (
-            <Animated.View key={ep.n} entering={FadeInDown.duration(420)}>
-              <EpisodeCard ep={ep} done={!!p.done[ep.n]} onToggle={toggle} onWatch={onWatch} wide height={212} />
-            </Animated.View>
+        <Animated.View key={nums.join('-')} entering={enter} style={styles.body}>
+          {eps.map(ep => (
+            <EpisodeCard key={ep.n} ep={ep} done={!!p.done[ep.n]} onToggle={toggle} blurTarget={target} />
           ))}
+        </Animated.View>
 
-          {v.canReveal && (
-            <Animated.View entering={FadeInDown.duration(360)}>
-              <Pressable
-                onPress={() => { haptic.success(); reveal(); }}
-                style={({ pressed }) => pressed && { transform: [{ scale: 0.98 }] }}
-                accessibilityRole="button"
-              >
-                <GlassView radius={R.lg} tint="rgba(139,147,255,0.14)" style={styles.reveal}>
-                  <IconSpark size={18} color={C.accent} />
-                  <Text style={styles.revealText}>Reveal next episode</Text>
-                  <Text style={styles.revealLeft}>{MAX_REVEALS - extra.length} left today</Text>
-                </GlassView>
-              </Pressable>
-            </Animated.View>
-          )}
-
-          {(v.allDoneForToday || v.finishedPlan) && (
-            <Animated.View entering={FadeInDown.duration(360)}>
-              <GlassView radius={R.lg} tint="rgba(92,224,160,0.10)" style={styles.doneBox}>
-                <View style={styles.doneIcon}><IconCheck size={16} color={C.bg} strokeWidth={3} /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.doneTitle}>{v.finishedPlan ? 'Plan complete. All 100 episodes.' : "That's all for today."}</Text>
-                  <Text style={styles.doneSub}>
-                    {v.finishedPlan ? 'Do the mock interviews out loud with a friend.' : 'Continue with your other targets. More tomorrow.'}
-                  </Text>
-                </View>
-              </GlassView>
-            </Animated.View>
-          )}
-
-          <Text style={styles.footer}>{doneCount} of {TOTAL} episodes done</Text>
-        </View>
+        {(todayDone || allDone) && (
+          <Animated.View entering={FadeIn.duration(360)} style={{ paddingHorizontal: 16, marginTop: 12 }}>
+            <GlassView blurTarget={target} radius={R.xl} tint="rgba(156,200,255,0.08)" style={styles.doneBox}>
+              <Text style={styles.doneTitle}>{allDone ? 'Plan complete. All 100 episodes.' : "That's today done."}</Text>
+              <Text style={styles.doneSub}>
+                {allDone ? 'Do the mock interviews out loud with a friend.' : 'Tap → if you want to keep going. Otherwise, on to your other targets.'}
+              </Text>
+            </GlassView>
+          </Animated.View>
+        )}
       </ScrollView>
-      <PartsSheet ep={parts} onClose={() => setParts(null)} />
     </View>
+  );
+}
+
+function NavButton({ dir, enabled, onPress }: { dir: 'left' | 'right'; enabled: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!enabled}
+      hitSlop={10}
+      style={({ pressed }) => [{ opacity: enabled ? 1 : 0.3 }, pressed && { transform: [{ scale: 0.92 }] }]}
+      accessibilityRole="button"
+      accessibilityLabel={dir === 'left' ? 'Previous episodes' : 'Next episodes'}
+    >
+      <GlassView radius={24} style={styles.navBtn}>
+        <IconChevron dir={dir} size={20} color={C.ink} strokeWidth={2.2} />
+      </GlassView>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   header: { alignItems: 'center', height: undefined },
-  date: { color: C.ink, fontSize: 19, fontWeight: '700', letterSpacing: -0.2 },
-  day: { color: C.muted, fontSize: 13.5, marginTop: 4, fontWeight: '500' },
+  date: { color: C.ink, fontSize: 24, fontFamily: FONT[700], letterSpacing: -0.6 },
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  sub: { color: C.ink2, fontSize: 14, fontFamily: FONT[500] },
+  subDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: C.muted },
+  subTopic: { color: C.accent, fontSize: 14, fontFamily: FONT[600] },
+  navRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 14 },
+  navBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  pageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10, minHeight: 30 },
+  pageLabel: { color: C.ink2, fontSize: 11.5, fontFamily: FONT[600], letterSpacing: 1.4 },
+  pageOf: { color: C.faint },
+  todayChip: { paddingHorizontal: 12, height: 30, borderRadius: R.pill, justifyContent: 'center', backgroundColor: 'rgba(156,200,255,0.16)', borderWidth: 1, borderColor: 'rgba(200,222,255,0.3)' },
+  todayChipText: { color: C.accent, fontSize: 12.5, fontFamily: FONT[600] },
   body: { paddingHorizontal: 16, gap: 12 },
-  pair: { flexDirection: 'row', gap: 12 },
-  reveal: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, height: 54 },
-  revealText: { color: C.ink, fontSize: 15.5, fontWeight: '700', flex: 1 },
-  revealLeft: { color: C.muted, fontSize: 12.5 },
-  doneBox: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-  doneIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: C.good, alignItems: 'center', justifyContent: 'center' },
-  doneTitle: { color: C.ink, fontSize: 15.5, fontWeight: '700' },
-  doneSub: { color: C.muted, fontSize: 13, marginTop: 2 },
-  footer: { color: C.faint, fontSize: 12.5, textAlign: 'center', marginTop: 8 },
+  doneBox: { padding: 18 },
+  doneTitle: { color: C.ink, fontSize: 17, fontFamily: FONT[700] },
+  doneSub: { color: C.muted, fontSize: 13.5, marginTop: 3, fontFamily: FONT[400], lineHeight: 19 },
 });

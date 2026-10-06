@@ -10,7 +10,8 @@ import { TabBar, Tab, TAB_BAR_H } from './src/components/TabBar';
 import { Home } from './src/screens/Home';
 import { Search } from './src/screens/Search';
 import { Progress } from './src/screens/Progress';
-import { C } from './src/theme';
+import { C, BG_GRADIENT, BG_LOCATIONS } from './src/theme';
+import { Opening } from './src/components/Opening';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SystemUI.setBackgroundColorAsync(C.bg).catch(() => {});
@@ -19,12 +20,12 @@ function Shell() {
   const { ready } = useStore();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('home');
+  const [intro, setIntro] = useState(true);
 
-  // Hide the splash on the second frame after the first real paint. No artificial delay.
+  // The native splash is a plain background; the opening animation takes over on the first frame.
   useEffect(() => {
-    if (!ready) return;
     requestAnimationFrame(() => requestAnimationFrame(() => { SplashScreen.hideAsync().catch(() => {}); }));
-  }, [ready]);
+  }, []);
 
   // Android back: Search/Progress → Home → exit.
   useEffect(() => {
@@ -35,16 +36,16 @@ function Shell() {
     return () => sub.remove();
   }, [tab]);
 
-  if (!ready) return null;
   const bottomPad = TAB_BAR_H + Math.max(insets.bottom, 10) + 8;
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={[C.bg, '#10162A', C.bg2]} style={StyleSheet.absoluteFill} />
-      {tab === 'home' && <Home bottomPad={bottomPad} />}
-      {tab === 'search' && <Search bottomPad={bottomPad} />}
-      {tab === 'progress' && <Progress bottomPad={bottomPad} />}
-      <TabBar tab={tab} onChange={setTab} />
+      <LinearGradient colors={BG_GRADIENT} locations={BG_LOCATIONS} style={StyleSheet.absoluteFill} />
+      {ready && tab === 'home' && <Home bottomPad={bottomPad} />}
+      {ready && tab === 'search' && <Search bottomPad={bottomPad} />}
+      {ready && tab === 'progress' && <Progress bottomPad={bottomPad} />}
+      {ready && <TabBar tab={tab} onChange={setTab} />}
+      {intro && <Opening onDone={() => setIntro(false)} />}
     </View>
   );
 }

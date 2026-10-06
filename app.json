@@ -7,25 +7,43 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0A0E1A",
+    "backgroundColor": "#03080B",
     "android": {
       "package": "com.epoch.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#0A0E1A",
+        "backgroundColor": "#03080B",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundImage": "./assets/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false
     },
-    "web": { "favicon": "./assets/favicon.png" },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
-      ["expo-splash-screen", {
-        "image": "./assets/splash-icon.png",
-        "imageWidth": 120,
-        "resizeMode": "contain",
-        "backgroundColor": "#0A0E1A"
-      }]
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120,
+          "resizeMode": "contain",
+          "backgroundColor": "#03080B"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/BricolageGrotesque_400Regular.ttf",
+            "./assets/fonts/BricolageGrotesque_500Medium.ttf",
+            "./assets/fonts/BricolageGrotesque_600SemiBold.ttf",
+            "./assets/fonts/BricolageGrotesque_700Bold.ttf",
+            "./assets/fonts/BricolageGrotesque_800ExtraBold.ttf"
+          ]
+        }
+      ]
     ]
   }
 }

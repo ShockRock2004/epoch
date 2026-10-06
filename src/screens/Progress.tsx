@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BONUS, EPISODES, TOTAL } from '../data/plan';
 import { useStore, DEFAULT_START } from '../lib/store';
 import { activity, addDays, diffDays, episodesOn, hoursWatched, ringProgress, streaks, totalHours, PLAN_DAYS } from '../lib/schedule';
-import { C, R, RING_COLORS, fmtClock } from '../theme';
+import { C, R, RING_COLORS, fmtClock, FONT } from '../theme';
 import { GlassView } from '../components/GlassView';
 import { Rings } from '../components/Rings';
 import { ActivityChart } from '../components/ActivityChart';
@@ -102,7 +102,7 @@ export function Progress({ bottomPad }: { bottomPad: number }) {
           <ActivityChart counts={counts} todayIndex={todayIdx} selected={sel} onSelect={i => { haptic.select(); setSel(sel === i ? null : i); }} width={chartW} />
           <View style={styles.key}>
             <View style={[styles.keySw, { backgroundColor: C.good }]} /><Text style={styles.keyText}>2+ episodes</Text>
-            <View style={[styles.keySw, { backgroundColor: '#4FA889' }]} /><Text style={styles.keyText}>1</Text>
+            <View style={[styles.keySw, { backgroundColor: '#5C7FB0' }]} /><Text style={styles.keyText}>1</Text>
             <View style={[styles.keyLine]} /><Text style={styles.keyText}>daily target</Text>
           </View>
           {selDay && (
@@ -172,49 +172,49 @@ export function Progress({ bottomPad }: { bottomPad: number }) {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: C.ink, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  title: { color: C.ink, fontSize: 28, fontFamily: FONT[800], letterSpacing: -0.5 },
   gear: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   card: { padding: 16 },
   cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
-  cardTitle: { color: C.ink, fontSize: 17, fontWeight: '700' },
-  cardPct: { color: C.ink2, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  cardTitle: { color: C.ink, fontSize: 17, fontFamily: FONT[700] },
+  cardPct: { color: C.ink2, fontSize: 15, fontFamily: FONT[700], fontVariant: ['tabular-nums'] },
   ringRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  ringNum: { color: C.ink, fontSize: 20, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  ringOf: { color: C.muted, fontSize: 10.5 },
+  ringNum: { color: C.ink, fontSize: 20, fontFamily: FONT[800], fontVariant: ['tabular-nums'] },
+  ringOf: { color: C.muted, fontFamily: FONT[400], fontSize: 10.5 },
   legend: { flex: 1, gap: 10 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendName: { color: C.muted, fontSize: 12.5 },
-  legendVal: { fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  legendName: { color: C.muted, fontFamily: FONT[400], fontSize: 12.5 },
+  legendVal: { fontSize: 14, fontFamily: FONT[800], fontVariant: ['tabular-nums'] },
   stats: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, paddingVertical: 12, paddingHorizontal: 10 },
-  statV: { color: C.ink, fontSize: 20, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  statL: { color: C.muted, fontSize: 11.5, marginTop: 2 },
+  statV: { color: C.ink, fontSize: 20, fontFamily: FONT[800], fontVariant: ['tabular-nums'] },
+  statL: { color: C.muted, fontFamily: FONT[400], fontSize: 11.5, marginTop: 2 },
   key: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   keySw: { width: 9, height: 9, borderRadius: 2 },
-  keyLine: { width: 14, height: 0, borderTopWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(169,176,255,0.8)', marginLeft: 6 },
-  keyText: { color: C.muted, fontSize: 11.5, marginRight: 6 },
+  keyLine: { width: 14, height: 0, borderTopWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(200,222,255,0.8)', marginLeft: 6 },
+  keyText: { color: C.muted, fontFamily: FONT[400], fontSize: 11.5, marginRight: 6 },
   selBox: { marginTop: 12, padding: 12, borderRadius: R.md, backgroundColor: 'rgba(255,255,255,0.05)', gap: 4 },
-  selTitle: { color: C.ink, fontSize: 13.5, fontWeight: '700' },
-  selEmpty: { color: C.muted, fontSize: 13 },
-  selEp: { color: C.ink2, fontSize: 13 },
-  section: { color: C.ink, fontSize: 17, fontWeight: '700', marginTop: 6 },
+  selTitle: { color: C.ink, fontSize: 13.5, fontFamily: FONT[700] },
+  selEmpty: { color: C.muted, fontFamily: FONT[400], fontSize: 13 },
+  selEp: { color: C.ink2, fontFamily: FONT[400], fontSize: 13 },
+  section: { color: C.ink, fontSize: 17, fontFamily: FONT[700], marginTop: 6 },
   bonus: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
   bonusPlay: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.accent2, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
-  bonusTitle: { color: C.ink, fontSize: 14, fontWeight: '600', lineHeight: 19 },
+  bonusTitle: { color: C.ink, fontSize: 14, fontFamily: FONT[600], lineHeight: 19 },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(4,6,14,0.7)' },
   sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12 },
   sheet: { padding: 18, paddingTop: 10 },
   grab: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: C.line2, marginBottom: 12 },
-  sheetTitle: { color: C.ink, fontSize: 20, fontWeight: '800' },
-  sheetLabel: { color: C.muted, fontSize: 12.5, fontWeight: '700', marginTop: 18, marginBottom: 8, letterSpacing: 0.4, textTransform: 'uppercase' },
+  sheetTitle: { color: C.ink, fontSize: 20, fontFamily: FONT[800] },
+  sheetLabel: { color: C.muted, fontSize: 12.5, fontFamily: FONT[700], marginTop: 18, marginBottom: 8, letterSpacing: 0.4, textTransform: 'uppercase' },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: R.md, padding: 4 },
   stepBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
-  stepVal: { color: C.ink, fontSize: 16, fontWeight: '700' },
+  stepVal: { color: C.ink, fontSize: 16, fontFamily: FONT[700] },
   smallBtn: { paddingHorizontal: 14, height: 36, borderRadius: R.pill, borderWidth: 1, borderColor: C.line2, justifyContent: 'center' },
-  smallBtnText: { color: C.ink2, fontWeight: '600', fontSize: 13.5 },
+  smallBtnText: { color: C.ink2, fontFamily: FONT[600], fontSize: 13.5 },
   reset: { height: 48, borderRadius: R.md, borderWidth: 1, borderColor: 'rgba(255,92,122,0.5)', alignItems: 'center', justifyContent: 'center' },
   resetArmed: { backgroundColor: 'rgba(255,92,122,0.22)' },
-  resetText: { color: '#FF8FA6', fontWeight: '700', fontSize: 15 },
+  resetText: { color: '#FF8FA6', fontFamily: FONT[700], fontSize: 15 },
 });
