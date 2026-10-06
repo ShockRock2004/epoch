@@ -219,15 +219,15 @@ export const PHASES: Record<Phase, { name: string; short: string }> = {
 export type RingGroup = { key: string; name: string; from: number; to: number; extra?: number[] };
 export const RING_CLUSTERS: { title: string; rings: RingGroup[] }[] = [
   { title: 'Classical ML', rings: [
-    { key: 'found', name: 'Foundations & metrics', from: 1, to: 4, extra: [9, 22] },
-    { key: 'reg', name: 'Regression & optimisation', from: 5, to: 8 },
-    { key: 'trees', name: 'Trees, ensembles & SVM', from: 10, to: 18 },
+    { key: 'found', name: 'Foundations', from: 1, to: 4, extra: [9, 22] },
+    { key: 'reg', name: 'Regression', from: 5, to: 8 },
+    { key: 'trees', name: 'Trees & ensembles', from: 10, to: 18 },
     { key: 'unsup', name: 'Unsupervised', from: 19, to: 21 },
   ] },
   { title: 'Deep learning & LLMs', rings: [
     { key: 'nn', name: 'Neural nets', from: 23, to: 38 },
     { key: 'tf', name: 'Transformers', from: 39, to: 47 },
-    { key: 'llm', name: 'How LLMs are built', from: 48, to: 67 },
+    { key: 'llm', name: 'Building LLMs', from: 48, to: 67 },
     { key: 'eng', name: 'AI engineering', from: 68, to: 100 },
   ] },
 ];

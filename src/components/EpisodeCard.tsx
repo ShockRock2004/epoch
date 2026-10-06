@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle, StyleProp } from 'react-native';
-import Animated, {
-  Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming,
-} from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import type { Episode, Seg } from '../data/plan';
 import { PHASES } from '../data/plan';
-import { C, FONT, PHASE_COLOR, R, alpha, fmtClock, fmtMins } from '../theme';
-import { GlassView } from './GlassView';
-import { IconCheck, IconClock, IconFlip, IconPlay, IconQuiz } from './Icons';
+import { C, FONT, PHASE_COLOR, R, S, T, fmtClock, fmtMins } from '../theme';
+import { Surface } from './Surface';
+import { IconCheck } from './Icons';
 import { haptic } from '../lib/haptics';
 import { openSeg } from '../lib/youtube';
 
-const FLIP_MS = 520;
+const FLIP_MS = 480;
 const HOLD_MS = 650;
 const HOLD_DELAY = 180; // a quick tap never shows the fill
 
@@ -20,122 +17,79 @@ type Props = {
   ep: Episode;
   done: boolean;
   onToggle: (n: number) => void;
-  blurTarget?: React.RefObject<View | null>;
   minHeight?: number;
   style?: StyleProp<ViewStyle>;
 };
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
 const range = (s: Seg) => (s.ranged ? `${fmtClock(s.start)}–${s.end === s.len ? 'end' : fmtClock(s.end)}` : fmtClock(s.len));
 
-export function EpisodeCard({ ep, done, onToggle, blurTarget, minHeight = 188, style }: Props) {
+export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Props) {
   const [flipped, setFlipped] = useState(false);
   const flip = useSharedValue(0);
   const hold = useSharedValue(0);
-  const pop = useSharedValue(1);
   const isReview = !!ep.review;
   const multi = ep.segs.length > 1;
-  const tint = PHASE_COLOR[ep.phase];
 
   const doFlip = () => {
     haptic.select();
-    const to = flipped ? 0 : 1;
-    setFlipped(!flipped);
-    flip.value = withTiming(to, { duration: FLIP_MS, easing: Easing.bezier(0.33, 0, 0.15, 1) });
+    setFlipped(f => !f);
+    flip.value = withTiming(flipped ? 0 : 1, { duration: FLIP_MS, easing: Easing.bezier(0.33, 0, 0.15, 1) });
   };
 
-  // Front and back share one rotation; each hides past 90° so Android never ghosts a face.
+  // One rotation drives both faces; each hides past 90° so Android never shows a ghosted face.
   const frontStyle = useAnimatedStyle(() => ({
     opacity: flip.value < 0.5 ? 1 : 0,
-    transform: [
-      { perspective: 1200 },
-      { rotateY: `${interpolate(flip.value, [0, 1], [0, 180])}deg` },
-      { scale: 1 - 0.05 * Math.sin(Math.PI * flip.value) },
-    ],
+    transform: [{ perspective: 1400 }, { rotateY: `${interpolate(flip.value, [0, 1], [0, 180])}deg` }],
   }));
   const backStyle = useAnimatedStyle(() => ({
     opacity: flip.value >= 0.5 ? 1 : 0,
-    transform: [
-      { perspective: 1200 },
-      { rotateY: `${interpolate(flip.value, [0, 1], [180, 360])}deg` },
-      { scale: 1 - 0.05 * Math.sin(Math.PI * flip.value) },
-    ],
+    transform: [{ perspective: 1400 }, { rotateY: `${interpolate(flip.value, [0, 1], [180, 360])}deg` }],
   }));
-  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 - 0.015 * hold.value }] }));
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 - 0.012 * hold.value }] }));
   const fillStyle = useAnimatedStyle(() => ({ width: `${hold.value * 100}%`, opacity: hold.value > 0.001 ? 1 : 0 }));
-  const badgeStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
   const onPressIn = () => {
     hold.value = withDelay(HOLD_DELAY, withTiming(1, { duration: HOLD_MS - HOLD_DELAY, easing: Easing.inOut(Easing.quad) }));
   };
-  const onPressOut = () => {
-    hold.value = withTiming(0, { duration: 220, easing: Easing.out(Easing.quad) });
-  };
+  const onPressOut = () => { hold.value = withTiming(0, { duration: 200 }); };
   const onLongPress = () => {
     done ? haptic.undo() : haptic.success();
     onToggle(ep.n);
-    pop.value = withSequence(withTiming(1.35, { duration: 140 }), withSpring(1, { damping: 9, stiffness: 220 }));
-    hold.value = withTiming(0, { duration: 320 });
+    hold.value = withTiming(0, { duration: 280 });
   };
 
+  // Hold-to-complete: a quiet wash with a thin leading edge.
   const fill = (
-    <Animated.View pointerEvents="none" style={[styles.fill, fillStyle]}>
-      <LinearGradient
-        colors={done ? ['rgba(255,178,92,0.02)', 'rgba(255,178,92,0.18)'] : ['rgba(255,255,255,0.0)', 'rgba(255,255,255,0.14)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={[styles.fillEdge, { backgroundColor: done ? '#FFD1A1' : '#FFFFFF' }]} />
+    <Animated.View pointerEvents="none" style={[styles.fill, { backgroundColor: done ? 'rgba(217,160,102,0.08)' : C.accentDim }, fillStyle]}>
+      <View style={[styles.fillEdge, { backgroundColor: done ? C.warn : C.accent }]} />
     </Animated.View>
   );
 
-  const shell = (children: React.ReactNode, absolute: boolean) => (
-    <GlassView
-      blurTarget={blurTarget}
-      radius={R.xl + 2}
-      style={absolute ? StyleSheet.absoluteFill : { minHeight }}
-      tint={done ? 'rgba(255,255,255,0.04)' : C.glass}
-    >
-      {fill}
-      {children}
-      {done && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.doneRing]} />}
-    </GlassView>
-  );
-
-  const header = (
-    <View style={styles.row}>
-      <View style={styles.tagRow}>
-        <Text style={styles.eyebrow}>EPISODE {ep.n}</Text>
-        <View style={[styles.tagDot, { backgroundColor: tint }]} />
-        <Text style={[styles.eyebrow, { color: tint }]}>{PHASES[ep.phase].short.toUpperCase()}</Text>
-      </View>
-      <Animated.View style={[styles.badge, done && styles.badgeDone, badgeStyle]}>
-        {done && <IconCheck size={13} color={C.accentInk} strokeWidth={3} />}
-      </Animated.View>
+  const label = (
+    <View style={styles.labelRow}>
+      <Text style={T.label}>EPISODE {pad2(ep.n)}</Text>
+      <View style={[styles.dot, { backgroundColor: PHASE_COLOR[ep.phase] }]} />
+      <Text style={T.label}>{PHASES[ep.phase].short.toUpperCase()}</Text>
+      <View style={{ flex: 1 }} />
+      {done && (
+        <View style={styles.status}>
+          <IconCheck size={13} color={C.accent} strokeWidth={2.4} />
+          <Text style={styles.statusText}>Done</Text>
+        </View>
+      )}
     </View>
   );
 
-  const watchBtn = (
+  const action = (
     <Pressable
-      onPress={() => {
-        haptic.nav();
-        if (isReview) doFlip();
-        else openSeg(ep.segs[0]);
-      }}
-      style={({ pressed }) => [styles.watch, pressed && { transform: [{ scale: 0.95 }] }]}
+      onPress={() => { haptic.nav(); isReview ? doFlip() : openSeg(ep.segs[0]); }}
+      style={({ pressed }) => [done ? styles.btnQuiet : styles.btn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel={isReview ? 'Quiz me' : `Watch ${ep.name} on YouTube`}
+      accessibilityLabel={isReview ? 'Show questions' : `Start ${ep.name} on YouTube`}
     >
-      <LinearGradient
-        colors={done ? ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.08)'] : ['#FFFFFF', '#E4ECF6']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.watchBg}
-      >
-        {isReview ? <IconQuiz size={16} color={done ? C.ink : C.accentInk} strokeWidth={2.3} /> : <IconPlay size={12} color={done ? C.ink : C.accentInk} />}
-        <Text style={[styles.watchText, done && { color: C.ink }]}>{isReview ? 'Quiz me' : done ? 'Rewatch' : multi ? 'Start' : 'Watch'}</Text>
-      </LinearGradient>
+      <Text style={done ? styles.btnQuietText : styles.btnText}>{isReview ? 'Questions' : done ? 'Rewatch' : 'Start'}</Text>
     </Pressable>
   );
 
@@ -148,18 +102,22 @@ export function EpisodeCard({ ep, done, onToggle, blurTarget, minHeight = 188, s
         onLongPress={onLongPress}
         delayLongPress={HOLD_MS}
         accessibilityRole="button"
-        accessibilityLabel={`Episode ${ep.n}: ${ep.name}. ${done ? 'Done.' : ''} Tap to flip, hold to mark ${done ? 'not done' : 'done'}.`}
+        accessibilityLabel={`Episode ${ep.n}: ${ep.name}.${done ? ' Done.' : ''} Tap for summary, hold to mark ${done ? 'not done' : 'done'}.`}
       >
-        {/* Front: sets the card's height. */}
+        {/* Front sets the card's height. */}
         <Animated.View style={[styles.face, frontStyle]} pointerEvents={flipped ? 'none' : 'box-none'}>
-          {shell(
+          <Surface style={{ minHeight }}>
+            {fill}
             <View style={styles.pad}>
-              {header}
-              <Text style={styles.name} numberOfLines={2}>{ep.name}</Text>
+              {label}
+              <Text style={[T.title, styles.title]} numberOfLines={2}>{ep.name}</Text>
 
-              {isReview && <Text style={styles.sub}>No video · {ep.review!.q.length} questions to answer out loud</Text>}
+              {isReview && <Text style={[T.secondary, styles.sub]}>No video. {ep.review!.q.length} questions to answer out loud.</Text>}
               {!isReview && !multi && (
-                <Text style={styles.sub} numberOfLines={2}>{ep.segs[0].title}<Text style={styles.subDim}>  ·  {ep.segs[0].channel}</Text></Text>
+                <Pressable onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} style={styles.single} accessibilityRole="link">
+                  <Text style={T.secondary} numberOfLines={2}>{ep.segs[0].title}</Text>
+                  <Text style={[T.meta, { marginTop: 2 }]}>{ep.segs[0].channel}</Text>
+                </Pressable>
               )}
               {multi && (
                 <View style={styles.list}>
@@ -167,55 +125,49 @@ export function EpisodeCard({ ep, done, onToggle, blurTarget, minHeight = 188, s
                     <Pressable
                       key={i}
                       onPress={() => { haptic.nav(); openSeg(s); }}
-                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: 'rgba(255,255,255,0.10)' }]}
+                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: C.raised }]}
                       accessibilityRole="link"
                       accessibilityLabel={`Play video ${i + 1}: ${s.title}`}
                     >
-                      <View style={styles.itemNum}><Text style={styles.itemNumText}>{i + 1}</Text></View>
+                      <Text style={styles.itemNum}>{i + 1}.</Text>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.itemTitle} numberOfLines={1}>{s.title}</Text>
-                        <Text style={styles.itemMeta}>{s.channel} · {range(s)}</Text>
+                        <Text style={T.secondary} numberOfLines={1}>{s.title}</Text>
+                        <Text style={[T.meta, styles.itemMeta]}>{s.channel} · {range(s)}</Text>
                       </View>
-                      <IconPlay size={11} color={C.accent} />
                     </Pressable>
                   ))}
                 </View>
               )}
 
-              <View style={{ flex: 1, minHeight: 14 }} />
-              <View style={styles.bottom}>
-                <View style={styles.metaRow}>
-                  <IconClock size={15} color={C.muted} />
-                  <Text style={styles.meta}>{isReview ? '~20 min' : fmtMins(ep.secs)}{multi ? `  ·  ${ep.segs.length} videos` : ''}</Text>
-                </View>
-                {watchBtn}
+              <View style={{ flex: 1, minHeight: S.lg }} />
+              <View style={styles.footer}>
+                <Text style={T.meta}>
+                  {isReview ? '~20 min' : fmtMins(ep.secs)}{multi ? ` · ${ep.segs.length} videos` : ''}
+                </Text>
+                {action}
               </View>
-            </View>,
-            false,
-          )}
+            </View>
+          </Surface>
         </Animated.View>
 
-        {/* Back: overlays the front at the same size. */}
+        {/* Back overlays the front at the same size. */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.face, backStyle]} pointerEvents={flipped ? 'box-none' : 'none'}>
-          {shell(
+          <Surface style={StyleSheet.absoluteFill}>
+            {fill}
             <View style={styles.pad}>
-              <View style={styles.row}>
-                <Text style={[styles.eyebrow, { color: tint }]}>{isReview ? 'QUESTIONS' : 'IN THIS EPISODE'}</Text>
-                <IconFlip size={16} color={C.muted} />
-              </View>
-              <ScrollView style={{ flex: 1, marginTop: 8 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                <Text style={styles.summary}>{ep.summary}</Text>
+              {label}
+              <ScrollView style={{ flex: 1, marginTop: S.md }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                <Text style={T.body}>{ep.summary}</Text>
                 {isReview && ep.review!.q.map((q, i) => (
                   <View key={i} style={styles.qRow}>
-                    <Text style={styles.qNum}>{i + 1}</Text>
-                    <Text style={styles.qText}>{q}</Text>
+                    <Text style={styles.itemNum}>{i + 1}.</Text>
+                    <Text style={[T.secondary, { flex: 1 }]}>{q}</Text>
                   </View>
                 ))}
               </ScrollView>
-              <Text style={styles.hint}>{done ? 'HOLD TO MARK NOT DONE' : 'HOLD TO MARK DONE'}</Text>
-            </View>,
-            true,
-          )}
+              <Text style={[T.meta, styles.hint]}>Tap to flip back · Hold to mark {done ? 'not done' : 'done'}</Text>
+            </View>
+          </Surface>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -224,34 +176,25 @@ export function EpisodeCard({ ep, done, onToggle, blurTarget, minHeight = 188, s
 
 const styles = StyleSheet.create({
   face: { backfaceVisibility: 'hidden' },
-  pad: { flex: 1, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  eyebrow: { color: C.muted, fontSize: 11, fontFamily: FONT[600], letterSpacing: 1.4 },
-  tagDot: { width: 4, height: 4, borderRadius: 2 },
-  badge: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.4, borderColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' },
-  badgeDone: { backgroundColor: C.good, borderColor: C.good },
-  name: { color: C.ink, fontSize: 21, fontFamily: FONT[700], lineHeight: 27, marginTop: 10, letterSpacing: -0.6 },
-  sub: { color: C.ink2, fontFamily: FONT[400], fontSize: 13.5, lineHeight: 19, marginTop: 6 },
-  subDim: { color: C.muted },
-  list: { marginTop: 12, gap: 6 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 10, borderRadius: R.md, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  itemNum: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(156,200,255,0.14)' },
-  itemNumText: { color: C.accent, fontFamily: FONT[700], fontSize: 11.5 },
-  itemTitle: { color: C.ink, fontFamily: FONT[500], fontSize: 13.5, lineHeight: 17 },
-  itemMeta: { color: C.muted, fontFamily: FONT[400], fontSize: 11.5, marginTop: 1, fontVariant: ['tabular-nums'] },
-  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  meta: { color: C.muted, fontFamily: FONT[500], fontSize: 13.5, fontVariant: ['tabular-nums'] },
-  watch: { borderRadius: R.pill, overflow: 'hidden' },
-  watchBg: { height: 42, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: R.pill },
-  watchText: { color: C.accentInk, fontSize: 15, fontFamily: FONT[700], letterSpacing: 0.1 },
-  summary: { color: C.ink, fontFamily: FONT[400], fontSize: 15, lineHeight: 22 },
-  qRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  qNum: { color: C.accent, fontSize: 13.5, fontFamily: FONT[700], width: 16, lineHeight: 19 },
-  qText: { color: C.ink2, fontFamily: FONT[400], fontSize: 13.5, lineHeight: 19, flex: 1 },
-  hint: { color: C.faint, fontFamily: FONT[600], fontSize: 10.5, textAlign: 'center', marginTop: 8, letterSpacing: 1.2 },
+  pad: { flex: 1, padding: S.xl },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
+  dot: { width: 5, height: 5, borderRadius: 3 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statusText: { fontFamily: FONT[500], fontSize: 12, color: C.accent },
+  title: { marginTop: S.md },
+  sub: { marginTop: S.sm },
+  single: { marginTop: S.sm },
+  list: { marginTop: S.md, gap: 2 },
+  item: { flexDirection: 'row', gap: S.sm, paddingVertical: 6, paddingHorizontal: 6, marginHorizontal: -6, borderRadius: R.sm },
+  itemNum: { fontFamily: FONT[500], fontSize: 13.5, lineHeight: 19, color: C.muted, width: 18 },
+  itemMeta: { color: C.faint, fontVariant: ['tabular-nums'] },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  btn: { backgroundColor: C.light, borderRadius: R.sm + 2, paddingHorizontal: S.lg + 2, height: 36, justifyContent: 'center' },
+  btnText: { fontFamily: FONT[600], fontSize: 14, color: C.onLight },
+  btnQuiet: { borderWidth: 1, borderColor: C.border2, borderRadius: R.sm + 2, paddingHorizontal: S.lg, height: 36, justifyContent: 'center' },
+  btnQuietText: { fontFamily: FONT[500], fontSize: 14, color: C.ink2 },
+  qRow: { flexDirection: 'row', gap: S.sm, marginTop: S.md },
+  hint: { textAlign: 'center', marginTop: S.md, color: C.faint },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' },
-  fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 2, opacity: 0.85 },
-  doneRing: { borderRadius: R.xl + 2, borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.32)' },
+  fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 1.5 },
 });

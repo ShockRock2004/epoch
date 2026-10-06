@@ -1,8 +1,6 @@
 // Hand-drawn topic glyphs: one clean line icon per topic on a 64-unit grid,
-// stroked with a teal gradient and set inside a glassy halo.
-import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+// shown on a quiet slate disc. Strokes are neutral; only small dots take the accent.
+import React from 'react';
 import Svg, { Defs, RadialGradient, LinearGradient, Stop, Circle, Ellipse, Line, Path, Rect, G } from 'react-native-svg';
 import type { TopicKey } from '../../data/plan';
 
@@ -104,7 +102,7 @@ const GLYPH: Record<TopicKey, React.ReactElement> = {
       {[[10, 18], [10, 32], [10, 46]].flatMap(([x, y]) => [[32, 12], [32, 32], [32, 52]].map(([u, v]) => <Line key={`${x}${y}${u}${v}`} x1={x} y1={y} x2={u} y2={v} opacity={0.45} />))}
       {[[32, 12], [32, 32], [32, 52]].flatMap(([x, y]) => [[54, 24], [54, 40]].map(([u, v]) => <Line key={`b${x}${y}${u}${v}`} x1={x} y1={y} x2={u} y2={v} opacity={0.45} />))}
       {[[10, 18], [10, 32], [10, 46], [32, 12], [32, 32], [32, 52], [54, 24], [54, 40]].map(([x, y]) => (
-        <Circle key={`n${x}${y}`} cx={x} cy={y} r={4.2} fill="#0D2230" />
+        <Circle key={`n${x}${y}`} cx={x} cy={y} r={4.2} fill="#172029" />
       ))}
     </G>
   ),
@@ -145,8 +143,8 @@ const GLYPH: Record<TopicKey, React.ReactElement> = {
       {[[8, 1.2], [22, 3.4], [36, 1.6], [50, 4.2]].map(([x, w]) => (
         <Line key={x} x1={x + 3} y1={16} x2={32} y2={48} strokeWidth={w} opacity={0.35 + w / 7} />
       ))}
-      {[8, 22, 36, 50].map(x => <Rect key={`t${x}`} x={x} y={8} width={7} height={7} rx={2} fill="#0D2230" />)}
-      <Circle cx={32} cy={50} r={6} fill="#0D2230" />
+      {[8, 22, 36, 50].map(x => <Rect key={`t${x}`} x={x} y={8} width={7} height={7} rx={2} fill="#172029" />)}
+      <Circle cx={32} cy={50} r={6} fill="#172029" />
     </G>
   ),
   transformer: (
@@ -177,23 +175,23 @@ const GLYPH: Record<TopicKey, React.ReactElement> = {
       <Path d="M12 8h22l10 10v32a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" />
       <Path d="M34 8v10h10" />
       <Path d="M15 26h18M15 33h12M15 40h8" opacity={0.6} />
-      <Circle cx={43} cy={43} r={9} fill="#0D2230" />
+      <Circle cx={43} cy={43} r={9} fill="#172029" />
       <Line x1={49.5} y1={49.5} x2={57} y2={57} />
     </G>
   ),
   'fine-tuning': (
     <G>
       <Line x1={14} y1={8} x2={14} y2={56} /><Line x1={32} y1={8} x2={32} y2={56} /><Line x1={50} y1={8} x2={50} y2={56} />
-      <Rect x={8} y={36} width={12} height={8} rx={3} fill="#0D2230" />
-      <Rect x={26} y={16} width={12} height={8} rx={3} fill="#0D2230" />
-      <Rect x={44} y={28} width={12} height={8} rx={3} fill="#0D2230" />
+      <Rect x={8} y={36} width={12} height={8} rx={3} fill="#172029" />
+      <Rect x={26} y={16} width={12} height={8} rx={3} fill="#172029" />
+      <Rect x={44} y={28} width={12} height={8} rx={3} fill="#172029" />
     </G>
   ),
   agents: (
     <G>
       <Ellipse cx={32} cy={32} rx={26} ry={16} strokeDasharray="3 4" opacity={0.7} />
       <Path d="M32 32L8 26M32 32l18-13M32 32l20 12M32 32l-10 15" opacity={0.5} />
-      <Circle cx={32} cy={32} r={7} fill="#0D2230" />
+      <Circle cx={32} cy={32} r={7} fill="#172029" />
       {DOT(8, 26, 3.2)}{DOT(50, 19, 3.2)}{DOT(52, 44, 3.2)}{DOT(22, 47, 3.2)}
     </G>
   ),
@@ -230,67 +228,34 @@ export const TOPIC_LABEL: Record<TopicKey, string> = {
   agents: 'Agents', evals: 'Evaluation', prompting: 'Prompting', review: 'Checkpoint',
 };
 
-const ORBIT_MS = 26000;
-
-/** The hero: a glowing teal glyph inside a glass disc, with a dot slowly orbiting it. */
-export function TopicArt({ topic, size = 220 }: { topic: TopicKey; size?: number }) {
-  const spin = useSharedValue(0);
-  useEffect(() => {
-    spin.value = withRepeat(withTiming(1, { duration: ORBIT_MS, easing: Easing.linear }), -1, false);
-  }, [spin]);
-  const orbit = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
-
-  const glyph = (w: number, stroke: string, opacity: number) => (
-    <G transform="translate(70 70) scale(1.25)" fill="none" stroke={stroke} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" opacity={opacity}>
-      {GLYPH[topic]}
-    </G>
-  );
-
+/** The hero: one quiet slate disc holding a single line glyph. */
+export function TopicArt({ topic, size = 132 }: { topic: TopicKey; size?: number }) {
   return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} viewBox="0 0 220 220">
-        <Defs>
-          <RadialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
-            <Stop offset="0" stopColor="#9CC8FF" stopOpacity="0.32" />
-            <Stop offset="0.55" stopColor="#9CC8FF" stopOpacity="0.08" />
-            <Stop offset="1" stopColor="#9CC8FF" stopOpacity="0" />
-          </RadialGradient>
-          <LinearGradient id="disc" x1="0.2" y1="0" x2="0.8" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.16" />
-            <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity="0.04" />
-            <Stop offset="1" stopColor="#C7DEFF" stopOpacity="0.08" />
-          </LinearGradient>
-          <LinearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.55" />
-            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity="0.06" />
-            <Stop offset="1" stopColor="#C7DEFF" stopOpacity="0.35" />
-          </LinearGradient>
-          <LinearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#F5F8FC" />
-            <Stop offset="0.45" stopColor="#E6F0FF" />
-            <Stop offset="1" stopColor="#9CC8FF" />
-          </LinearGradient>
-        </Defs>
-        <Circle cx={110} cy={110} r={110} fill="url(#halo)" />
-        <Circle cx={110} cy={110} r={72} fill="url(#disc)" stroke="url(#rim)" strokeWidth={1.2} />
-        <Path d="M60 84 A 56 56 0 0 1 96 50" stroke="#FFFFFF" strokeOpacity={0.35} strokeWidth={2} strokeLinecap="round" fill="none" />
-        {glyph(9, '#9CC8FF', 0.07)}
-        {glyph(5.5, '#C7DEFF', 0.14)}
-        {glyph(2.4, 'url(#ink)', 1)}
-      </Svg>
-      <Animated.View style={[StyleSheet.absoluteFill, orbit]} pointerEvents="none">
-        <Svg width={size} height={size} viewBox="0 0 220 220">
-          <Circle cx={110} cy={110} r={94} fill="none" stroke="rgba(220,234,255,0.16)" strokeWidth={1} strokeDasharray="1.5 6" />
-          <Circle cx={110} cy={16} r={7} fill="#9CC8FF" opacity={0.18} />
-          <Circle cx={110} cy={16} r={3.4} fill="#E6F0FF" />
-        </Svg>
-      </Animated.View>
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 132 132">
+      <Defs>
+        <LinearGradient id="disc" x1="0.2" y1="0" x2="0.8" y2="1">
+          <Stop offset="0" stopColor="#1E2933" />
+          <Stop offset="1" stopColor="#111921" />
+        </LinearGradient>
+        <RadialGradient id="lift" cx="0.5" cy="0.38" r="0.6">
+          <Stop offset="0" stopColor="#9AA7FF" stopOpacity="0.07" />
+          <Stop offset="1" stopColor="#9AA7FF" stopOpacity="0" />
+        </RadialGradient>
+        <LinearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#9AA7FF" /><Stop offset="1" stopColor="#9AA7FF" />
+        </LinearGradient>
+      </Defs>
+      <Circle cx={66} cy={66} r={65} fill="url(#disc)" stroke="#283642" strokeWidth={1} />
+      <Circle cx={66} cy={66} r={64} fill="url(#lift)" />
+      <G transform="translate(36 36) scale(0.9375)" fill="none" stroke="#DDE3EA" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
+        {GLYPH[topic]}
+      </G>
+    </Svg>
   );
 }
 
 /** Small version of a glyph for lists. */
-export function TopicGlyph({ topic, size = 22, color = '#C7DEFF' }: { topic: TopicKey; size?: number; color?: string }) {
+export function TopicGlyph({ topic, size = 22, color = '#A8B4C0' }: { topic: TopicKey; size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 64 64">
       <Defs>
@@ -298,7 +263,7 @@ export function TopicGlyph({ topic, size = 22, color = '#C7DEFF' }: { topic: Top
           <Stop offset="0" stopColor={color} /><Stop offset="1" stopColor={color} />
         </LinearGradient>
       </Defs>
-      <G fill="none" stroke={color} strokeWidth={3.6} strokeLinecap="round" strokeLinejoin="round">{GLYPH[topic]}</G>
+      <G fill="none" stroke={color} strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round">{GLYPH[topic]}</G>
     </Svg>
   );
 }

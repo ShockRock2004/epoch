@@ -7,12 +7,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#03080B",
+    "backgroundColor": "#05070A",
     "android": {
       "package": "com.epoch.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#03080B",
+        "backgroundColor": "#05070A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundImage": "./assets/android-icon-background.png"
@@ -29,7 +29,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 120,
           "resizeMode": "contain",
-          "backgroundColor": "#03080B"
+          "backgroundColor": "#05070A"
         }
       ],
       [

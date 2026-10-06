@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import Svg, { Circle, G } from 'react-native-svg';
 import Animated, { Easing, useAnimatedProps, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
-import { alpha } from '../theme';
+import { C } from '../theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -17,8 +17,8 @@ function Arc({ r, c, frac, color, stroke, delay }: { r: number; c: number; frac:
   const props = useAnimatedProps(() => ({ strokeDashoffset: len * (1 - Math.min(t.value, 1)) }));
   return (
     <G rotation={-90} origin={`${c}, ${c}`}>
-      <Circle cx={c} cy={c} r={r} stroke={alpha(color, 0.16)} strokeWidth={stroke} fill="none" />
-      <AnimatedCircle
+      <Circle cx={c} cy={c} r={r} stroke={C.raised} strokeWidth={stroke} fill="none" />
+      {frac > 0 && <AnimatedCircle
         cx={c}
         cy={c}
         r={r}
@@ -28,7 +28,7 @@ function Arc({ r, c, frac, color, stroke, delay }: { r: number; c: number; frac:
         strokeLinecap="round"
         strokeDasharray={`${len} ${len}`}
         animatedProps={props}
-      />
+      />}
     </G>
   );
 }

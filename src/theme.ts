@@ -1,55 +1,79 @@
+import type { TextStyle } from 'react-native';
 import type { Phase } from './data/plan';
 
+/**
+ * Epoch design tokens. One neutral slate ramp, one accent, and nothing else.
+ * Depth comes from tonal steps and thin borders, never from glow.
+ */
 export const C = {
-  bg: '#03080B',
-  bg2: '#0B3A47',
-  ink: '#F2F6FA',
-  ink2: '#C6D3DE',
-  muted: '#8498A8',
-  faint: '#536677',
-  line: 'rgba(255,255,255,0.10)',
-  line2: 'rgba(255,255,255,0.18)',
-  glass: 'rgba(255,255,255,0.06)',
-  glassHi: 'rgba(255,255,255,0.10)',
-  glassDeep: 'rgba(8,20,30,0.72)',
-  accent: '#9CC8FF',
-  accent2: '#6EA8F5',
-  accentInk: '#08121F',
-  accentWash: 'rgba(156,200,255,0.16)',
-  good: '#F2F6FA', // 'done' is white; no green anywhere
-  goodWash: 'rgba(200,222,255,0.14)',
-  warn: '#FFB25C',
+  // Background → surfaces (each step is one notch lighter)
+  bg: '#05070A',
+  bg1: '#080C11',
+  bg2: '#0D1319',
+  card: '#151E27',
+  raised: '#1B2630',
+  hover: '#202D38',
+
+  border: '#283642',
+  border2: '#344452',
+
+  ink: '#F1F5F9', // headings, primary text
+  ink2: '#A8B4C0', // secondary text
+  muted: '#74818E', // metadata
+  faint: '#5E6B77', // lowest-priority metadata
+
+  accent: '#9AA7FF', // the only accent: selection, progress, small indicators
+  accentDim: 'rgba(154,167,255,0.14)',
+  accentLine: 'rgba(154,167,255,0.38)',
+
+  light: '#E9EDF2', // primary button fill
+  onLight: '#0D1319',
+
+  warn: '#D9A066', // used only for the "undo" hold, as a thin edge
 };
 
-/** Background: near-black at the top, deep teal at the bottom. */
-export const BG_GRADIENT = ['#03070B', '#061722', '#0A2E3B', '#0D4150'] as const;
-export const BG_LOCATIONS = [0, 0.38, 0.78, 1] as const;
+/** Background: almost black, settling into charcoal. No visible banding. */
+export const BG_GRADIENT = ['#05070A', '#080C11', '#0D1319'] as const;
+export const BG_LOCATIONS = [0, 0.55, 1] as const;
 
-/** Sora, embedded at build time (one family name per weight on Android). Clean geometric, light-handed. */
+export const R = { sm: 8, md: 12, card: 16, lg: 20, pill: 999 };
+export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 };
+
+/** Sora, embedded at build time (one family per weight on Android). */
 export const FONT = {
+  300: 'Sora_300Light',
   400: 'Sora_400Regular',
   500: 'Sora_500Medium',
   600: 'Sora_600SemiBold',
-  700: 'Sora_600SemiBold', // Sora runs heavy; semibold reads as bold and stays elegant
+  700: 'Sora_600SemiBold',
   800: 'Sora_700Bold',
-  300: 'Sora_300Light',
 } as const;
 
-export const PHASE_COLOR: Record<Phase, string> = {
-  1: '#7DB4FF',
-  2: '#B79CFF',
-  3: '#FFA866',
-  4: '#FFD36E',
-  5: '#FF8DB3',
+/** Type scale. Hierarchy comes from size and weight; colour stays neutral. */
+export const T: Record<'display' | 'title' | 'heading' | 'body' | 'secondary' | 'meta' | 'label', TextStyle> = {
+  display: { fontFamily: FONT[600], fontSize: 30, lineHeight: 36, letterSpacing: 1.5, color: C.ink },
+  title: { fontFamily: FONT[600], fontSize: 19, lineHeight: 25, letterSpacing: -0.3, color: C.ink },
+  heading: { fontFamily: FONT[600], fontSize: 24, lineHeight: 30, letterSpacing: -0.6, color: C.ink },
+  body: { fontFamily: FONT[400], fontSize: 14.5, lineHeight: 22, color: C.ink2 },
+  secondary: { fontFamily: FONT[400], fontSize: 13.5, lineHeight: 19, color: C.ink2 },
+  meta: { fontFamily: FONT[400], fontSize: 12.5, lineHeight: 17, color: C.muted },
+  label: { fontFamily: FONT[500], fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, color: C.muted },
 };
 
-// Ring colours, outer → inner, per cluster (Apple-Fitness-like saturation on navy).
-export const RING_COLORS = [
-  ['#F2F6FA', '#9CC8FF', '#B79CFF', '#FFD36E'],
-  ['#B79CFF', '#FFA866', '#FF8DB3', '#9CC8FF'],
-];
+/** Phase colours survive only as small dots, and are muted to sit in the slate palette. */
+export const PHASE_COLOR: Record<Phase, string> = {
+  1: '#8FA6D6',
+  2: '#A89BD4',
+  3: '#C9A27F',
+  4: '#C2B47E',
+  5: '#C996AE',
+};
 
-export const R = { sm: 10, md: 14, lg: 18, xl: 22, pill: 999 };
+/** Progress rings: one hue at four lightnesses, outer → inner. */
+export const RING_COLORS = [
+  ['#C9D0FF', '#9AA7FF', '#7884D9', '#5A64AE'],
+  ['#C9D0FF', '#9AA7FF', '#7884D9', '#5A64AE'],
+];
 
 export const alpha = (hex: string, a: number) => {
   const h = hex.replace('#', '');

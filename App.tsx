@@ -4,9 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StoreProvider, useStore } from './src/lib/store';
-import { TabBar, Tab, TAB_BAR_H } from './src/components/TabBar';
+import { TabBar, Tab } from './src/components/TabBar';
 import { Home } from './src/screens/Home';
 import { Search } from './src/screens/Search';
 import { Progress } from './src/screens/Progress';
@@ -18,7 +18,6 @@ SystemUI.setBackgroundColorAsync(C.bg).catch(() => {});
 
 function Shell() {
   const { ready } = useStore();
-  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('home');
   const [intro, setIntro] = useState(true);
 
@@ -36,14 +35,13 @@ function Shell() {
     return () => sub.remove();
   }, [tab]);
 
-  const bottomPad = TAB_BAR_H + Math.max(insets.bottom, 10) + 8;
 
   return (
     <View style={styles.root}>
       <LinearGradient colors={BG_GRADIENT} locations={BG_LOCATIONS} style={StyleSheet.absoluteFill} />
-      {ready && tab === 'home' && <Home bottomPad={bottomPad} />}
-      {ready && tab === 'search' && <Search bottomPad={bottomPad} />}
-      {ready && tab === 'progress' && <Progress bottomPad={bottomPad} />}
+      {ready && tab === 'home' && <Home />}
+      {ready && tab === 'search' && <Search />}
+      {ready && tab === 'progress' && <Progress />}
       {ready && <TabBar tab={tab} onChange={setTab} />}
       {intro && <Opening onDone={() => setIntro(false)} />}
     </View>
