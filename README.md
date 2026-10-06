@@ -6,9 +6,10 @@
 
 **A 50-day ML study plan that fits into lunch.** 100 short episodes, two a day, from classic ML to how LLMs are trained, tuned, given retrieval and turned into agents.
 
-<img src="docs/screenshots/home.png" width="30%" alt="Home" />
-<img src="docs/screenshots/search.png" width="30%" alt="Search" />
-<img src="docs/screenshots/progress.png" width="30%" alt="Progress" />
+<img src="docs/screenshots/home.png" width="23%" alt="Home" />
+<img src="docs/screenshots/search.png" width="23%" alt="Search" />
+<img src="docs/screenshots/episode.png" width="23%" alt="Episode sheet" />
+<img src="docs/screenshots/progress.png" width="23%" alt="Progress" />
 
 </div>
 
@@ -21,7 +22,7 @@
 | **Today** | Two episodes a day, shown as cards. Finish only one and the other carries over to tomorrow. The ← → arrows page through the rest of the plan whenever you want more. |
 | **Episodes** | Each card lists its videos with exact time ranges. **Start** opens YouTube at the right second. Tap a card for its summary, hold it to mark it done. |
 | **Search** | Full-text search over names, summaries, channels and review questions, with filters for phase, status, type, length and sort order. Ten results a page; tap one for its full sheet. |
-| **Progress** | Concentric rings for classical ML and for deep learning and LLMs, a 50-day activity chart, hours watched and your streak. |
+| **Progress** | An overall progress dial, a slider for every phase group, a 50-day activity chart, hours watched and your streak. |
 
 Everything lives on the device. No account, no network calls except YouTube itself.
 
@@ -39,7 +40,7 @@ Video titles, channels and lengths were checked against YouTube on 2026-10-06. R
 
 ## Build it
 
-Expo SDK 57, React Native 0.86, TypeScript. Animation is Reanimated 4, every icon and illustration is hand-drawn `react-native-svg`, surfaces are real `expo-blur` glass over a violet ambient background, and the type is Poppins.
+Expo SDK 57, React Native 0.86, TypeScript. Animation is Reanimated 4, every icon and illustration is hand-drawn `react-native-svg`, screens sit on a black-to-violet environment with dark purple panels and magenta-to-violet gradient controls, and the type is Montserrat.
 
 ```bash
 npm install
@@ -60,7 +61,7 @@ cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,arm
 ```
 src/data/plan.ts        the 100 episodes: videos, time ranges, names, summaries
 src/lib/schedule.ts     pure logic: daily queue, carry-over, streaks, rings (tested)
-src/theme.ts            design tokens: environment colours, glass recipe, type scale
+src/theme.ts            design tokens: environment, panel and gradient colours, type scale
 src/screens/            Home · Search · Progress
-src/components/         Glass, Ambient, EpisodeCard, EpisodeSheet, Pager, TabBar, Rings, illustrations
+src/components/         Ambient, Glass (panel), Buttons, Dial, EpisodeCard, EpisodeSheet, Pager, TabBar, illustrations
 ```

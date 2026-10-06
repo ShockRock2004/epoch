@@ -7,6 +7,8 @@ import type { Episode } from '../data/plan';
 import { PHASES } from '../data/plan';
 import { C, FONT, GLASS, PHASE_COLOR, R, S, T, fmtMins } from '../theme';
 import { Glass } from './Glass';
+import { BlackButton, GradientButton } from './Buttons';
+import { GRAD } from '../theme';
 import { Bullets, pad2, segRange } from './EpisodeCard';
 import { TOPIC_LABEL, TopicGlyph } from './illustrations';
 import { IconCheck, IconChevron, IconClock, IconPlay, IconX } from './Icons';
@@ -45,7 +47,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
     <Modal visible={!!ep} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
       <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close">
-          <LinearGradient colors={['rgba(5,6,10,0.55)', 'rgba(20,10,45,0.85)']} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={['rgba(7,4,12,0.6)', 'rgba(40,8,70,0.88)']} style={StyleSheet.absoluteFill} />
         </Pressable>
       </Animated.View>
 
@@ -55,7 +57,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
           style={[styles.wrap, { top: insets.top + S.xl, paddingBottom: insets.bottom + S.md, maxHeight: height }]}
           pointerEvents="box-none"
         >
-          <Glass variant="solid" radius={R.lg + 2} border={GLASS.borderHi} style={styles.sheet}>
+          <Glass radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             {/* Top bar */}
             <View style={styles.bar}>
               <View style={styles.stepper}>
@@ -88,7 +90,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
                   <Pill><Text style={styles.pillText}>{ep.review ? 'Review' : `${ep.segs.length} video${ep.segs.length > 1 ? 's' : ''}`}</Text></Pill>
                   <Pill><Text style={styles.pillText}>Plan day {Math.ceil(ep.n / 2)}</Text></Pill>
                   {isDone(ep.n) && (
-                    <Pill accent><IconCheck size={13} color={C.accent} strokeWidth={2.4} /><Text style={[styles.pillText, { color: C.accent }]}>Done</Text></Pill>
+                    <Pill accent><IconCheck size={13} color={C.accent} strokeWidth={2.4} /><Text style={[styles.pillText, { color: C.accent }]}>DONE</Text></Pill>
                   )}
                 </View>
 
@@ -116,7 +118,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
                               {s.channel} · {s.ranged ? `${segRange(s)} of ${segRange({ ...s, ranged: false })}` : segRange(s)}
                             </Text>
                           </View>
-                          <View style={styles.play}><IconPlay size={11} color={C.onLight} /></View>
+                          <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.play}><IconPlay size={11} color={C.ink} /></LinearGradient>
                         </Pressable>
                       ))}
                     </View>
@@ -142,24 +144,22 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
 
             {/* Actions */}
             <View style={styles.footer}>
-              <Pressable
+              <BlackButton
+                label={isDone(ep.n) ? 'Done · undo' : 'Mark done'}
+                height={48}
+                style={{ flex: 1 }}
+                icon={isDone(ep.n) ? <IconCheck size={14} color={C.accent} strokeWidth={2.6} /> : undefined}
                 onPress={() => { isDone(ep.n) ? haptic.undo() : haptic.success(); onToggle(ep.n); }}
-                style={({ pressed }) => [styles.btnGlass, pressed && { transform: [{ scale: 0.97 }] }]}
-                accessibilityRole="button"
-              >
-                {isDone(ep.n) && <IconCheck size={15} color={C.accent} strokeWidth={2.4} />}
-                <Text style={styles.btnGlassText}>{isDone(ep.n) ? 'Done · undo' : 'Mark as done'}</Text>
-              </Pressable>
+              />
               {!ep.review && (
-                <Pressable
+                <GradientButton
+                  label="Start"
+                  height={48}
+                  style={{ flex: 1 }}
+                  icon={<IconPlay size={12} color={C.ink} />}
                   onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }}
-                  style={({ pressed }) => [styles.btn, pressed && { transform: [{ scale: 0.97 }] }]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Start ${ep.name} on YouTube`}
-                >
-                  <IconPlay size={12} color={C.onLight} />
-                  <Text style={styles.btnText}>Start</Text>
-                </Pressable>
+                  a11y={`Start ${ep.name} on YouTube`}
+                />
               )}
             </View>
           </Glass>
@@ -170,7 +170,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
 }
 
 function Pill({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
-  return <View style={[styles.pill, accent && { borderColor: C.accentLine, backgroundColor: 'rgba(124,58,237,0.16)' }]}>{children}</View>;
+  return <View style={[styles.pill, accent && { borderColor: C.accentLine, backgroundColor: 'rgba(192,38,211,0.18)' }]}>{children}</View>;
 }
 
 function BarButton({ children, onPress, enabled, label }: { children: React.ReactNode; onPress: () => void; enabled: boolean; label: string }) {
@@ -194,20 +194,20 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.md, paddingTop: S.md, paddingBottom: S.sm },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   count: { color: C.ink2, fontFamily: FONT[500], fontSize: 13, minWidth: 64, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  barBtn: { width: 38, height: 38, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: GLASS.border },
+  barBtn: { width: 38, height: 38, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: GLASS.borderHi },
   body: { paddingHorizontal: S.xl, paddingTop: S.md, paddingBottom: S.xl },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: S.md },
-  tile: { width: 48, height: 48, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(124,58,237,0.20)', borderWidth: 1, borderColor: 'rgba(196,181,253,0.30)' },
+  tile: { width: 48, height: 48, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(192,38,211,0.2)', borderWidth: 1, borderColor: 'rgba(232,121,249,0.32)' },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   dot: { width: 5, height: 5, borderRadius: 3 },
-  title: { fontFamily: FONT[600], fontSize: 21, lineHeight: 29, letterSpacing: -0.4, color: C.ink, marginTop: S.lg },
+  title: { fontFamily: FONT[800], fontSize: 21, lineHeight: 28, color: C.ink, marginTop: S.lg },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginTop: S.md },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 28, borderRadius: R.pill, borderWidth: 1, borderColor: GLASS.border, backgroundColor: 'rgba(255,255,255,0.05)' },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 28, borderRadius: R.sm, borderWidth: 1, borderColor: GLASS.borderHi, backgroundColor: 'rgba(0,0,0,0.4)' },
   pillText: { color: C.ink2, fontFamily: FONT[500], fontSize: 12 },
   section: { ...T.label, marginTop: S.xxl, marginBottom: S.md },
-  video: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md, borderRadius: R.md, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GLASS.border },
-  videoNum: { width: 24, height: 24, borderRadius: 12, textAlign: 'center', lineHeight: 24, color: C.ink, fontFamily: FONT[600], fontSize: 12, backgroundColor: 'rgba(124,58,237,0.30)', overflow: 'hidden' },
-  play: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.light, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
+  video: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md, borderRadius: R.md, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
+  videoNum: { width: 24, height: 24, borderRadius: 12, textAlign: 'center', lineHeight: 24, color: C.ink, fontFamily: FONT[600], fontSize: 12, backgroundColor: 'rgba(192,38,211,0.35)', overflow: 'hidden' },
+  play: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
   qRow: { flexDirection: 'row', gap: S.md },
   qNum: { color: C.accent, fontFamily: FONT[600], fontSize: 14, lineHeight: 22, width: 16 },
   footer: { flexDirection: 'row', gap: S.sm, padding: S.md, borderTopWidth: 1, borderTopColor: GLASS.border },

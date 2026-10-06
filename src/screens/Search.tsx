@@ -7,6 +7,7 @@ import { TOPIC_LABEL, TopicGlyph } from '../components/illustrations';
 import { useStore } from '../lib/store';
 import { C, FONT, GLASS, PHASE_COLOR, R, S, T } from '../theme';
 import { Glass } from '../components/Glass';
+import { BlackButton, GradientButton, GradientSegment } from '../components/Buttons';
 import { Pager } from '../components/Pager';
 import { EpisodeSheet } from '../components/EpisodeSheet';
 import { useTabClearance } from '../components/TabBar';
@@ -56,11 +57,10 @@ function Chip({ label, on, onPress, dot, solid }: { label: string; on: boolean; 
   return (
     <Pressable onPress={() => { haptic.select(); onPress(); }} accessibilityRole="button" accessibilityState={{ selected: on }}>
       <Glass
-        radius={R.pill}
-        variant={solid ? 'solid' : 'glass'}
-        tint={on ? 'rgba(124,58,237,0.32)' : solid ? 'rgba(255,255,255,0.05)' : undefined}
-        border={on ? C.accentLine : GLASS.border}
-        highlight={!solid}
+        radius={R.sm}
+        tint={on ? C.light : 'rgba(0,0,0,0.38)'}
+        border={on ? C.light : GLASS.borderHi}
+        highlight={false}
         style={styles.chip}
       >
         <View style={styles.chipRow}>
@@ -128,13 +128,13 @@ export function Search() {
 
   const header = (
     <View style={{ paddingTop: insets.top + S.xl, gap: S.md }}>
-      <View style={styles.titleRow}>
-        <Text style={T.heading}>Search</Text>
-        <Text style={T.meta}>{results.length} of {EPISODES.length}</Text>
+      <View>
+        <Text style={styles.screenTitle}>SEARCH</Text>
+        <Text style={[T.label, { color: C.muted }]}>{results.length} OF {EPISODES.length} EPISODES</Text>
       </View>
 
       <View style={styles.searchRow}>
-        <Glass radius={R.md} border={GLASS.borderHi} style={styles.input}>
+        <Glass radius={R.md} tint="rgba(0,0,0,0.42)" border={GLASS.borderHi} highlight={false} style={styles.input}>
           <View style={styles.inputRow}>
             <IconSearch size={17} color={C.ink2} />
             <TextInput
@@ -153,7 +153,7 @@ export function Search() {
           </View>
         </Glass>
         <Pressable onPress={() => { haptic.nav(); setSheet(true); }} accessibilityLabel="More filters">
-          <Glass radius={R.md} border={extraFilters ? C.accentLine : GLASS.borderHi} tint={extraFilters ? 'rgba(124,58,237,0.30)' : undefined} style={styles.filterBtn}>
+          <Glass radius={R.md} border={extraFilters ? C.accent : GLASS.borderHi} tint={extraFilters ? 'rgba(192,38,211,0.35)' : 'rgba(0,0,0,0.42)'} highlight={false} style={styles.filterBtn}>
             <View style={styles.center}>
               <IconFilter size={18} color={C.ink} />
               {extraFilters > 0 && <View style={styles.badge} />}
@@ -169,15 +169,7 @@ export function Search() {
         ))}
       </ScrollView>
 
-      <Glass radius={R.md} style={styles.segment}>
-        <View style={styles.segRow}>
-          {STATUS.map(([k, l]) => (
-            <Pressable key={k} onPress={() => { haptic.select(); setStatus(k); }} style={[styles.segBtn, status === k && styles.segOn]} accessibilityRole="button" accessibilityState={{ selected: status === k }}>
-              <Text style={[styles.segText, status === k && styles.segTextOn]}>{l}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </Glass>
+      <GradientSegment items={STATUS} value={status} onChange={k => { haptic.select(); setStatus(k); }} />
 
       {results.length > PAGE && (
         <Text style={[T.meta, { marginTop: S.xs }]}>
@@ -205,7 +197,7 @@ export function Search() {
             <Animated.View entering={FadeIn.duration(220).delay(index * 25)}>
               <Pressable onPress={() => { haptic.nav(); setSnapshot(results); setOpen(page * PAGE + index); }} accessibilityRole="button" accessibilityLabel={`Episode ${e.n}: ${e.name}${done ? ', done' : ''}`}>
                 {({ pressed }) => (
-                  <Glass radius={R.card - 2} border={done ? C.accentLine : GLASS.border} style={pressed && { transform: [{ scale: 0.985 }] }}>
+                  <Glass radius={R.card} border={done ? C.accentLine : GLASS.border} style={[styles.rowShadow, pressed && { transform: [{ scale: 0.985 }] }]}>
                     <View style={styles.row}>
                       <View style={styles.tile}><TopicGlyph topic={e.topic} size={20} /></View>
                       <View style={{ flex: 1 }}>
@@ -235,7 +227,7 @@ export function Search() {
             <Text style={[T.title, { fontSize: 16 }]}>Nothing matches</Text>
             <Text style={T.meta}>Try a different word, or loosen the filters.</Text>
             {anyFilter && (
-              <Pressable onPress={clear} style={styles.clearBtn}><Text style={styles.clearText}>Clear filters</Text></Pressable>
+              <Pressable onPress={clear} style={styles.clearBtn}><Text style={styles.clearText}>CLEAR FILTERS</Text></Pressable>
             )}
           </Glass>
         }
@@ -256,7 +248,7 @@ export function Search() {
           <Pressable style={[StyleSheet.absoluteFill, styles.scrim]} onPress={() => setSheet(false)} accessibilityLabel="Close" />
         </Animated.View>
         <Animated.View entering={SlideInDown.duration(300)} style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
+          <Glass radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             <View style={styles.grab} />
             <Text style={T.title}>Filters</Text>
             <Text style={styles.sheetLabel}>TYPE</Text>
@@ -276,12 +268,8 @@ export function Search() {
               ))}
             </View>
             <View style={styles.sheetActions}>
-              <Pressable onPress={() => { haptic.undo(); setKind('all'); setLen('all'); setSort('plan'); }} style={styles.btnGlass}>
-                <Text style={styles.btnGlassText}>Reset</Text>
-              </Pressable>
-              <Pressable onPress={() => setSheet(false)} style={styles.btn}>
-                <Text style={styles.btnText}>Show {results.length} episodes</Text>
-              </Pressable>
+              <BlackButton label="Reset" height={48} onPress={() => { haptic.undo(); setKind('all'); setLen('all'); setSort('plan'); }} />
+              <GradientButton label={`Show ${results.length} episodes`} height={48} style={{ flex: 1 }} onPress={() => setSheet(false)} />
             </View>
           </Glass>
         </Animated.View>
@@ -291,7 +279,7 @@ export function Search() {
 }
 
 const styles = StyleSheet.create({
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  screenTitle: { fontFamily: FONT[800], fontSize: 22, letterSpacing: 1.2, color: C.ink },
   searchRow: { flexDirection: 'row', gap: S.sm },
   input: { flex: 1, height: 48 },
   inputRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, paddingHorizontal: S.md + 2 },
@@ -302,8 +290,8 @@ const styles = StyleSheet.create({
   chips: { gap: S.sm, paddingRight: S.lg },
   chip: { height: 34 },
   chipRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: S.md + 2 },
-  chipText: { color: C.ink2, fontFamily: FONT[500], fontSize: 13 },
-  chipTextOn: { color: C.ink },
+  chipText: { color: C.ink2, fontFamily: FONT[600], fontSize: 12.5 },
+  chipTextOn: { color: C.onLight, fontFamily: FONT[700] },
   dot: { width: 6, height: 6, borderRadius: 3 },
   segment: { height: 42 },
   segRow: { flex: 1, flexDirection: 'row', padding: 4 },
@@ -312,16 +300,17 @@ const styles = StyleSheet.create({
   segText: { color: C.muted, fontFamily: FONT[500], fontSize: 13 },
   segTextOn: { color: C.ink },
   row: { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 },
-  tile: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(124,58,237,0.18)', borderWidth: 1, borderColor: 'rgba(196,181,253,0.22)' },
+  tile: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(192,38,211,0.18)', borderWidth: 1, borderColor: 'rgba(232,121,249,0.28)' },
+  rowShadow: { },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowName: { fontFamily: FONT[600], fontSize: 15, lineHeight: 21, color: C.ink, marginTop: 2 },
+  rowName: { fontFamily: FONT[700], fontSize: 14.5, lineHeight: 21, color: C.ink, marginTop: 2 },
   rowEnd: { alignItems: 'flex-end', justifyContent: 'center', gap: 4, minWidth: 28 },
   today: { fontFamily: FONT[600], fontSize: 10.5, color: C.accent, marginLeft: 4 },
-  hit: { color: C.ink, backgroundColor: 'rgba(124,58,237,0.45)' },
+  hit: { color: C.ink, backgroundColor: 'rgba(192,38,211,0.55)' },
   empty: { alignItems: 'center', paddingVertical: S.xxxl, gap: S.sm },
-  clearBtn: { marginTop: S.md, paddingHorizontal: S.lg, height: 40, borderRadius: R.md, backgroundColor: C.light, justifyContent: 'center' },
-  clearText: { color: C.onLight, fontFamily: FONT[600], fontSize: 13.5 },
-  scrim: { backgroundColor: 'rgba(8,6,20,0.72)' },
+  clearBtn: { marginTop: S.md, paddingHorizontal: S.lg, height: 40, borderRadius: R.md, backgroundColor: C.black, borderWidth: 1, borderColor: GLASS.borderHi, justifyContent: 'center' },
+  clearText: { color: C.ink, fontFamily: FONT[700], fontSize: 11.5, letterSpacing: 1.6 },
+  scrim: { backgroundColor: 'rgba(7,4,12,0.78)' },
   sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: S.md },
   sheet: { padding: S.xl, paddingTop: S.md },
   grab: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: GLASS.borderHi, marginBottom: S.lg },

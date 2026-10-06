@@ -7,12 +7,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#05070A",
+    "backgroundColor": "#07040C",
     "android": {
       "package": "com.epoch.app",
       "versionCode": 2,
       "adaptiveIcon": {
-        "backgroundColor": "#05070A",
+        "backgroundColor": "#07040C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundImage": "./assets/android-icon-background.png"
@@ -29,17 +29,18 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 120,
           "resizeMode": "contain",
-          "backgroundColor": "#05070A"
+          "backgroundColor": "#07040C"
         }
       ],
       [
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Poppins_400Regular.ttf",
-            "./assets/fonts/Poppins_500Medium.ttf",
-            "./assets/fonts/Poppins_600SemiBold.ttf",
-            "./assets/fonts/Poppins_700Bold.ttf"
+            "./assets/fonts/Montserrat_400Regular.ttf",
+            "./assets/fonts/Montserrat_500Medium.ttf",
+            "./assets/fonts/Montserrat_600SemiBold.ttf",
+            "./assets/fonts/Montserrat_700Bold.ttf",
+            "./assets/fonts/Montserrat_800ExtraBold.ttf"
           ]
         }
       ]

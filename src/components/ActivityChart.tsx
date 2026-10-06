@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Line, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { C, FONT } from '../theme';
 
 type Props = {
@@ -27,8 +27,15 @@ export function ActivityChart({ counts, todayIndex, selected, onSelect, width, h
   return (
     <View>
       <Svg width={width} height={height}>
+        <Defs>
+          <LinearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#F0ABFC" />
+            <Stop offset="0.5" stopColor="#C026D3" />
+            <Stop offset="1" stopColor="#6D28D9" />
+          </LinearGradient>
+        </Defs>
         {[1, 2, 3, 4].map(v => (
-          <Line key={v} x1={0} x2={width} y1={y(v)} y2={y(v)} stroke={v === TARGET ? 'rgba(196,181,253,0.45)' : 'rgba(255,255,255,0.04)'} strokeWidth={1} strokeDasharray={v === TARGET ? '4 4' : undefined} />
+          <Line key={v} x1={0} x2={width} y1={y(v)} y2={y(v)} stroke={v === TARGET ? 'rgba(232,121,249,0.45)' : 'rgba(255,255,255,0.05)'} strokeWidth={1} strokeDasharray={v === TARGET ? '4 4' : undefined} />
         ))}
         {counts.map((v, i) => {
           const future = i > todayIndex;
@@ -37,7 +44,7 @@ export function ActivityChart({ counts, todayIndex, selected, onSelect, width, h
           const fill = selected === i ? C.ink
             : future ? 'rgba(255,255,255,0.05)'
             : v === 0 ? 'rgba(255,255,255,0.12)'
-            : v >= TARGET ? C.accent : 'rgba(196,181,253,0.5)';
+            : v >= TARGET ? 'url(#barFill)' : 'rgba(199,125,255,0.45)';
           return <Rect key={i} x={i * slot + (slot - barW) / 2} y={plotH - h} width={barW} height={h} rx={Math.min(2.5, barW / 2)} fill={fill} />;
         })}
         {todayIndex >= 0 && todayIndex < n && (

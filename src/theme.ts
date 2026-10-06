@@ -3,92 +3,93 @@ import type { Phase } from './data/plan';
 
 /**
  * Epoch design tokens.
- * The gradient is the environment; the glass is the surface; type is the hierarchy.
+ * A black screen lit violet from the top, dark purple panels, and magenta-to-violet
+ * gradient controls. White type does the talking; small uppercase labels carry structure.
  */
 export const C = {
-  // Base environment (darkest → lighter)
-  bg: '#05060A',
-  bg1: '#080B12',
-  bg2: '#0C1018',
+  bg: '#07040C',
+  bg1: '#0C0716',
+  bg2: '#120A20',
 
-  // Slate, for the few opaque pieces
-  slate1: '#111923',
-  slate2: '#151F2B',
-  slate3: '#1A2532',
-
-  // Ambient light: lives in the background, never on whole surfaces
-  deepViolet: '#3B0764',
-  violet: '#6D28D9',
-  electric: '#7C3AED',
-  indigo: '#4F46E5',
+  // Light in the environment
+  deepViolet: '#3B0A6E',
+  violet: '#6A1BC2',
+  electric: '#8A2BE2',
+  indigo: '#4C1D95',
   magenta: '#C026D3',
   pink: '#D946EF',
 
   // Text
-  ink: '#F8FAFC', // primary
-  ink2: '#C7CBDA', // secondary, soft white
-  muted: '#8B90A7', // metadata
-  faint: '#626780', // lowest priority
+  ink: '#FFFFFF',
+  ink2: '#D9CCEB', // soft lavender white
+  muted: '#9B8BB4', // metadata
+  faint: '#6E5F86',
 
-  // Small accents (selected states, progress, indicators)
-  accent: '#C4B5FD', // light violet, readable on dark glass
-  accentDim: 'rgba(167,139,250,0.20)',
-  accentLine: 'rgba(196,181,253,0.45)',
+  // Accents
+  accent: '#C77DFF', // magenta-violet, like the reference greeting
+  label: '#A970F0', // small uppercase field labels
+  accentDim: 'rgba(192,38,211,0.18)',
+  accentLine: 'rgba(199,125,255,0.45)',
 
-  // White contrast controls
-  light: '#F5F7FA',
-  onLight: '#0B1017',
+  // Controls
+  light: '#FFFFFF',
+  onLight: '#2A0A4A',
+  black: '#050308',
 
-  warn: '#F0B37E',
+  warn: '#F2B37E',
 };
 
-/** Glass recipe: blurred background + smoked tint + hairline border + faint top highlight. */
+/** The signature gradient: magenta → violet → deep purple, left to right. */
+export const GRAD = ['#D13BF0', '#8E2DE2', '#4A0E8F'] as const;
+
+/** Panels: dark purple surfaces with a hairline violet edge and a soft shadow. */
 export const GLASS = {
-  tint: 'rgba(18,22,38,0.48)',
-  tintStrong: 'rgba(16,20,32,0.80)',
-  tintSolid: '#0E1120', // inside modals: opaque, since a modal window has nothing behind it to blur
-  border: 'rgba(255,255,255,0.10)',
-  borderHi: 'rgba(255,255,255,0.16)',
-  highlight: 'rgba(255,255,255,0.06)',
-  activeFill: 'rgba(255,255,255,0.12)',
-  intensity: 38,
+  panel: ['#1F1036', '#140A25'] as const, // top → bottom
+  tintSolid: '#140A24',
+  field: 'rgba(0,0,0,0.36)', // input-like rows inside panels
+  border: 'rgba(199,125,255,0.14)',
+  borderHi: 'rgba(199,125,255,0.28)',
+  highlight: 'rgba(255,255,255,0.05)',
+  activeFill: '#FFFFFF',
 };
 
-export const R = { sm: 10, md: 12, card: 18, lg: 22, pill: 999 };
+export const R = { sm: 8, md: 10, card: 14, lg: 18, pill: 999 };
 export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 };
 
-/** Poppins, embedded at build time (one family name per weight on Android). */
+/** Montserrat, embedded at build time (one family name per weight on Android). */
 export const FONT = {
-  400: 'Poppins_400Regular',
-  500: 'Poppins_500Medium',
-  600: 'Poppins_600SemiBold',
-  700: 'Poppins_700Bold',
+  400: 'Montserrat_400Regular',
+  500: 'Montserrat_500Medium',
+  600: 'Montserrat_600SemiBold',
+  700: 'Montserrat_700Bold',
+  800: 'Montserrat_800ExtraBold',
 } as const;
 
-/** Type scale. Hierarchy comes from size and weight; colour stays white-to-grey. */
-export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 'meta' | 'label', TextStyle> = {
-  display: { fontFamily: FONT[700], fontSize: 32, lineHeight: 40, letterSpacing: 1, color: C.ink },
-  heading: { fontFamily: FONT[600], fontSize: 26, lineHeight: 34, letterSpacing: -0.4, color: C.ink },
-  title: { fontFamily: FONT[600], fontSize: 18, lineHeight: 25, letterSpacing: -0.2, color: C.ink },
-  body: { fontFamily: FONT[400], fontSize: 14.5, lineHeight: 22, color: C.ink2 },
-  secondary: { fontFamily: FONT[400], fontSize: 13.5, lineHeight: 20, color: C.ink2 },
-  meta: { fontFamily: FONT[400], fontSize: 12.5, lineHeight: 18, color: C.muted },
-  label: { fontFamily: FONT[500], fontSize: 10.5, lineHeight: 15, letterSpacing: 1.1, color: C.muted },
+/** Type scale, modelled on the reference: magenta greeting, heavy white headline, tracked caps. */
+export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 'meta' | 'label' | 'greeting', TextStyle> = {
+  greeting: { fontFamily: FONT[700], fontSize: 15, lineHeight: 20, color: C.accent },
+  display: { fontFamily: FONT[800], fontSize: 34, lineHeight: 41, letterSpacing: 0.5, color: C.ink },
+  heading: { fontFamily: FONT[800], fontSize: 26, lineHeight: 32, letterSpacing: 0.2, color: C.ink },
+  title: { fontFamily: FONT[700], fontSize: 17.5, lineHeight: 24, color: C.ink },
+  body: { fontFamily: FONT[500], fontSize: 14, lineHeight: 21, color: C.ink2 },
+  secondary: { fontFamily: FONT[500], fontSize: 13, lineHeight: 19, color: C.ink2 },
+  meta: { fontFamily: FONT[500], fontSize: 12, lineHeight: 17, color: C.muted },
+  label: { fontFamily: FONT[700], fontSize: 9.5, lineHeight: 14, letterSpacing: 1.6, color: C.label },
 };
 
 /** Phase colours appear only as small dots. */
 export const PHASE_COLOR: Record<Phase, string> = {
-  1: '#A5B4FC',
-  2: '#C4B5FD',
-  3: '#F0ABFC',
-  4: '#F9A8D4',
-  5: '#93C5FD',
+  1: '#E879F9',
+  2: '#C084FC',
+  3: '#A78BFA',
+  4: '#F0ABFC',
+  5: '#818CF8',
 };
 
-/** Progress rings, outer → inner. */
+/** Ring / bar colours: all from the one magenta-violet family. */
 export const RING_COLORS = [
-  ['#EDE9FE', '#C4B5FD', '#A78BFA', '#8B5CF6'],
-  ['#F5D0FE', '#E879F9', '#C084FC', '#818CF8'],
+  ['#E879F9', '#C77DFF', '#A855F7', '#7C3AED'],
+  ['#F0ABFC', '#D946EF', '#9333EA', '#6D28D9'],
 ];
 
 export const alpha = (hex: string, a: number) => {

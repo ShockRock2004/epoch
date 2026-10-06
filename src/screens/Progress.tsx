@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BONUS, EPISODES, TOTAL } from '../data/plan';
 import { useStore, DEFAULT_START } from '../lib/store';
 import { activity, addDays, diffDays, episodesOn, hoursWatched, ringProgress, streaks, totalHours, PLAN_DAYS } from '../lib/schedule';
-import { C, FONT, GLASS, R, RING_COLORS, S, T, fmtClock } from '../theme';
+import { C, FONT, GLASS, GRAD, R, S, T, fmtClock } from '../theme';
 import { Glass } from '../components/Glass';
-import { Rings } from '../components/Rings';
+import { Dial, GradientBar } from '../components/Dial';
 import { ActivityChart } from '../components/ActivityChart';
+import { BlackButton } from '../components/Buttons';
 import { useTabClearance } from '../components/TabBar';
 import { IconCheck, IconChevron, IconGear, IconPlay } from '../components/Icons';
 import { openSeg } from '../lib/youtube';
@@ -34,6 +37,7 @@ export function Progress() {
   const done = Object.keys(p.done).length;
   const hrs = hoursWatched(p);
   const chartW = Math.min(width, 640) - S.lg * 2 - S.xl * 2;
+  const dayCaption = todayIdx < 0 ? 'NOT STARTED YET' : todayIdx >= PLAN_DAYS ? 'PLAN DAYS OVER' : `DAY ${todayIdx + 1} OF ${PLAN_DAYS}`;
 
   const selDay = sel != null ? addDays(p.start, sel) : null;
   const selEps = selDay ? episodesOn(p, selDay) : [];
@@ -45,66 +49,73 @@ export function Progress() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.titleRow}>
-          <Text style={T.heading}>Progress</Text>
+          <View>
+            <Text style={styles.screenTitle}>PROGRESS</Text>
+            <Text style={[T.label, { color: C.muted }]}>{dayCaption}</Text>
+          </View>
           <Pressable onPress={() => { haptic.nav(); setArmed(false); setSettings(true); }} hitSlop={10} style={styles.iconBtn} accessibilityLabel="Settings">
-            <IconGear size={18} color={C.ink2} />
+            <IconGear size={18} color={C.ink} />
           </Pressable>
         </View>
 
-        <View style={styles.stats}>
-          {[
-            { v: `${done}`, l: `of ${TOTAL} episodes` },
-            { v: hrs.toFixed(1), l: `of ${totalHours().toFixed(0)} hours` },
-            { v: `${st.current}`, l: st.best > st.current ? `day streak, best ${st.best}` : 'day streak' },
-          ].map(s => (
-            <Glass key={s.l} style={styles.stat}>
-              <Text style={styles.statV}>{s.v}</Text>
-              <Text style={[T.meta, { marginTop: 2 }]}>{s.l}</Text>
-            </Glass>
-          ))}
+        {/* Overall, as a thermostat dial */}
+        <View style={styles.dialWrap}>
+          <Text style={T.label}>OVERALL</Text>
+          <Dial frac={done / TOTAL} value={`${done}`} unit={`of ${TOTAL} episodes`} caption={`${Math.round((done / TOTAL) * 100)}% COMPLETE`} />
         </View>
 
-        {clusters.map((cl, ci) => (
-          <Glass key={cl.title} style={styles.card}>
-            <View style={styles.cardHead}>
-              <Text style={T.title}>{cl.title}</Text>
-              <Text style={[T.secondary, styles.num]}>{Math.round(cl.frac * 100)}%</Text>
+        {/* Split card, like the reference's home | outside temperature */}
+        <Glass>
+          <View style={styles.splitRow}>
+            <View style={styles.splitCell}>
+              <Text style={T.label}>HOURS WATCHED</Text>
+              <Text style={styles.big}>{hrs.toFixed(1)}<Text style={styles.bigUnit}> / {totalHours().toFixed(0)}</Text></Text>
             </View>
-            <View style={styles.ringRow}>
-              <View>
-                <Rings rings={cl.rings.map((r, i) => ({ frac: r.frac, color: RING_COLORS[ci][i] }))} size={136} stroke={10} gap={5} />
-                <View style={styles.ringCenter} pointerEvents="none">
-                  <Text style={styles.ringNum}>{cl.done}</Text>
-                  <Text style={[T.meta, { fontSize: 11 }]}>of {cl.total}</Text>
-                </View>
+            <View style={styles.divider} />
+            <View style={styles.splitCell}>
+              <Text style={T.label}>DAY STREAK</Text>
+              <Text style={[styles.big, { color: C.accent }]}>{st.current}<Text style={styles.bigUnit}>  best {st.best}</Text></Text>
+            </View>
+          </View>
+        </Glass>
+
+        {/* Phases, like the reference's rooms & devices sliders */}
+        <Glass style={styles.card}>
+          {clusters.map((cl, ci) => (
+            <View key={cl.title} style={ci > 0 ? { marginTop: S.xl } : undefined}>
+              <View style={styles.clusterHead}>
+                <Text style={styles.clusterTitle}>{cl.title.toUpperCase()}</Text>
+                <Text style={[T.meta, styles.num]}>{Math.round(cl.frac * 100)}%</Text>
               </View>
-              <View style={styles.legend}>
-                {cl.rings.map((r, i) => (
-                  <View key={r.key} style={styles.legendRow}>
-                    <View style={[styles.legendDot, { backgroundColor: RING_COLORS[ci][i] }]} />
-                    <Text style={[T.secondary, { flex: 1 }]} numberOfLines={1}>{r.name}</Text>
-                    <Text style={[T.meta, styles.num]}>{r.done}/{r.total}</Text>
+              <View style={styles.rule} />
+              {cl.rings.map(r => (
+                <View key={r.key} style={styles.slider}>
+                  <View style={styles.sliderHead}>
+                    <Text style={T.label}>{r.name.toUpperCase()}</Text>
+                    <Text style={[T.meta, styles.num, { color: C.ink2 }]}>{r.done}/{r.total}</Text>
                   </View>
-                ))}
-              </View>
+                  <GradientBar frac={r.frac} />
+                </View>
+              ))}
             </View>
-          </Glass>
-        ))}
+          ))}
+        </Glass>
 
         <Glass style={styles.card}>
-          <View style={styles.cardHead}>
-            <Text style={T.title}>Activity</Text>
-            <Text style={T.meta}>{todayIdx < 0 ? 'Not started' : todayIdx >= PLAN_DAYS ? 'Plan days over' : `Day ${todayIdx + 1} of ${PLAN_DAYS}`}</Text>
+          <View style={styles.clusterHead}>
+            <Text style={styles.clusterTitle}>ACTIVITY</Text>
+            <Text style={T.meta}>50 days</Text>
           </View>
+          <View style={[styles.rule, { marginBottom: S.md }]} />
           <ActivityChart counts={counts} todayIndex={todayIdx} selected={sel} onSelect={i => { haptic.select(); setSel(sel === i ? null : i); }} width={chartW} />
           <View style={styles.key}>
-            <View style={[styles.keySw, { backgroundColor: C.accent }]} /><Text style={T.meta}>2+ episodes</Text>
-            <View style={[styles.keySw, { backgroundColor: 'rgba(196,181,253,0.5)' }]} /><Text style={T.meta}>1</Text>
-            <View style={styles.keyLine} /><Text style={T.meta}>daily target</Text>
+            <LinearGradient colors={GRAD} style={styles.keySw} /><Text style={T.meta}>2+ episodes</Text>
+            <View style={[styles.keySw, { backgroundColor: 'rgba(199,125,255,0.45)' }]} /><Text style={T.meta}>1</Text>
+            <View style={styles.keyLine} /><Text style={T.meta}>target</Text>
           </View>
           {selDay && (
             <View style={styles.selBox}>
-              <Text style={[T.secondary, { color: C.ink }]}>Day {sel! + 1} · {shortDate(selDay)}</Text>
+              <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[700] }]}>Day {sel! + 1} · {shortDate(selDay)}</Text>
               {selEps.length === 0 ? (
                 <Text style={T.meta}>{sel! > todayIdx ? 'Still ahead.' : 'Nothing finished that day.'}</Text>
               ) : selEps.map(n => (
@@ -121,11 +132,13 @@ export function Progress() {
         {BONUS.map(s => (
           <Pressable key={s.id} onPress={() => { haptic.nav(); openSeg(s); }} accessibilityRole="link">
             {({ pressed }) => (
-              <Glass style={[styles.bonus, pressed && { transform: [{ scale: 0.985 }] }]}>
-                <View style={styles.bonusPlay}><IconPlay size={11} color={C.ink2} /></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[T.secondary, { color: C.ink }]} numberOfLines={2}>{s.title}</Text>
-                  <Text style={[T.meta, { marginTop: 2 }]}>{s.channel} · {fmtClock(s.len)}</Text>
+              <Glass style={pressed ? { transform: [{ scale: 0.985 }] } : undefined}>
+                <View style={styles.bonusRow}>
+                  <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bonusPlay}><IconPlay size={11} color={C.ink} /></LinearGradient>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[600] }]} numberOfLines={2}>{s.title}</Text>
+                    <Text style={[T.meta, { marginTop: 2 }]}>{s.channel} · {fmtClock(s.len)}</Text>
+                  </View>
                 </View>
               </Glass>
             )}
@@ -133,20 +146,22 @@ export function Progress() {
         ))}
       </ScrollView>
 
-      <Modal visible={settings} transparent animationType="fade" onRequestClose={() => setSettings(false)} statusBarTranslucent navigationBarTranslucent>
-        <Pressable style={styles.scrim} onPress={() => setSettings(false)} accessibilityLabel="Close" />
-        <View style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
+      <Modal visible={settings} transparent animationType="none" onRequestClose={() => setSettings(false)} statusBarTranslucent navigationBarTranslucent>
+        <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
+          <Pressable style={[StyleSheet.absoluteFill, styles.scrim]} onPress={() => setSettings(false)} accessibilityLabel="Close" />
+        </Animated.View>
+        <Animated.View entering={SlideInDown.duration(300)} style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
+          <Glass radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             <View style={styles.grab} />
-            <Text style={T.title}>Settings</Text>
+            <Text style={styles.clusterTitle}>SETTINGS</Text>
             <Text style={styles.sheetLabel}>DAY 1 IS</Text>
             <View style={styles.stepper}>
               <Pressable onPress={() => { haptic.select(); setStart(addDays(p.start, -1)); }} style={styles.stepBtn} accessibilityLabel="One day earlier">
-                <IconChevron dir="left" size={17} color={C.ink2} />
+                <IconChevron dir="left" size={17} color={C.ink} />
               </Pressable>
-              <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[500] }]}>{shortDate(p.start)} {p.start.slice(0, 4)}</Text>
+              <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[700] }]}>{shortDate(p.start)} {p.start.slice(0, 4)}</Text>
               <Pressable onPress={() => { haptic.select(); setStart(addDays(p.start, 1)); }} style={styles.stepBtn} accessibilityLabel="One day later">
-                <IconChevron size={17} color={C.ink2} />
+                <IconChevron size={17} color={C.ink} />
               </Pressable>
             </View>
             <View style={{ flexDirection: 'row', gap: S.sm, marginTop: S.sm }}>
@@ -154,17 +169,16 @@ export function Progress() {
               <Pressable onPress={() => { haptic.select(); setStart(DEFAULT_START); }} style={styles.smallBtn}><Text style={styles.smallBtnText}>7 Oct 2026</Text></Pressable>
             </View>
             <Text style={styles.sheetLabel}>RESET</Text>
-            <Pressable
+            <BlackButton
+              label={armed ? 'Tap again to erase everything' : 'Reset progress'}
+              height={46}
               onPress={() => {
                 if (!armed) { haptic.warn(); setArmed(true); return; }
                 haptic.undo(); reset(); setArmed(false); setSettings(false);
               }}
-              style={[styles.reset, armed && styles.resetArmed]}
-            >
-              <Text style={styles.resetText}>{armed ? 'Tap again to erase all progress' : 'Reset progress'}</Text>
-            </Pressable>
+            />
           </Glass>
-        </View>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -172,36 +186,35 @@ export function Progress() {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.xs },
-  iconBtn: { width: 38, height: 38, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: GLASS.border },
-  stats: { flexDirection: 'row', gap: S.sm },
-  stat: { flex: 1, paddingVertical: S.md + 2, paddingHorizontal: S.md },
-  statV: { fontFamily: FONT[600], fontSize: 22, color: C.ink, fontVariant: ['tabular-nums'] },
+  screenTitle: { fontFamily: FONT[800], fontSize: 22, letterSpacing: 1.2, color: C.ink },
+  iconBtn: { width: 40, height: 40, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: GLASS.borderHi },
+  dialWrap: { alignItems: 'center', gap: S.sm, marginVertical: S.sm },
+  splitRow: { flexDirection: 'row', paddingVertical: S.lg },
+  splitCell: { flex: 1, alignItems: 'center', gap: 6 },
+  divider: { width: 1, backgroundColor: GLASS.borderHi },
+  big: { fontFamily: FONT[600], fontSize: 30, color: C.ink, fontVariant: ['tabular-nums'] },
+  bigUnit: { fontFamily: FONT[500], fontSize: 12.5, color: C.muted },
   card: { padding: S.xl },
-  cardHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: S.lg },
+  clusterHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  clusterTitle: { fontFamily: FONT[800], fontSize: 12, letterSpacing: 1.6, color: C.ink },
+  rule: { height: 1, backgroundColor: GLASS.borderHi, marginTop: S.sm },
+  slider: { marginTop: S.lg, gap: S.sm },
+  sliderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   num: { fontVariant: ['tabular-nums'] },
-  ringRow: { flexDirection: 'row', alignItems: 'center', gap: S.xl },
-  ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  ringNum: { fontFamily: FONT[600], fontSize: 20, color: C.ink, fontVariant: ['tabular-nums'] },
-  legend: { flex: 1, gap: S.md },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
-  legendDot: { width: 7, height: 7, borderRadius: 4 },
   key: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: S.md },
-  keySw: { width: 8, height: 8, borderRadius: 2, marginLeft: 4 },
-  keyLine: { width: 14, borderTopWidth: 1, borderStyle: 'dashed', borderColor: GLASS.borderHi, marginLeft: 8 },
-  selBox: { marginTop: S.md, padding: S.md, borderRadius: R.md, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GLASS.border, gap: 6 },
+  keySw: { width: 9, height: 9, borderRadius: 2, marginLeft: 4 },
+  keyLine: { width: 14, borderTopWidth: 1, borderStyle: 'dashed', borderColor: C.accentLine, marginLeft: 8 },
+  selBox: { marginTop: S.md, padding: S.md, borderRadius: R.md, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border, gap: 6 },
   selRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bonus: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md + 2, borderRadius: R.card - 2 },
-  bonusPlay: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GLASS.border, paddingLeft: 2 },
-  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(8,6,20,0.72)' },
+  bonusRow: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md + 2 },
+  bonusPlay: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
+  scrim: { backgroundColor: 'rgba(7,4,12,0.78)' },
   sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: S.md },
   sheet: { padding: S.xl, paddingTop: S.md },
   grab: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: GLASS.borderHi, marginBottom: S.lg },
   sheetLabel: { ...T.label, marginTop: S.xl, marginBottom: S.sm },
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: R.md, borderWidth: 1, borderColor: GLASS.border, padding: 3 },
+  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: GLASS.field, borderRadius: R.md, borderWidth: 1, borderColor: GLASS.borderHi, padding: 3 },
   stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
-  smallBtn: { paddingHorizontal: S.md, height: 32, borderRadius: R.pill, borderWidth: 1, borderColor: GLASS.border, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center' },
-  smallBtnText: { color: C.ink2, fontFamily: FONT[500], fontSize: 13 },
-  reset: { height: 44, borderRadius: R.sm + 2, borderWidth: 1, borderColor: GLASS.borderHi, alignItems: 'center', justifyContent: 'center' },
-  resetArmed: { borderColor: '#8A4B52', backgroundColor: 'rgba(138,75,82,0.16)' },
-  resetText: { color: '#E3A7AE', fontFamily: FONT[500], fontSize: 14 },
+  smallBtn: { paddingHorizontal: S.md, height: 32, borderRadius: R.sm, borderWidth: 1, borderColor: GLASS.borderHi, backgroundColor: GLASS.field, justifyContent: 'center' },
+  smallBtnText: { color: C.ink2, fontFamily: FONT[600], fontSize: 12.5 },
 });

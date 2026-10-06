@@ -6,6 +6,7 @@ import type { Episode, Seg } from '../data/plan';
 import { PHASES } from '../data/plan';
 import { C, FONT, GLASS, PHASE_COLOR, R, S, T, fmtClock, fmtMins } from '../theme';
 import { Glass } from './Glass';
+import { BlackButton, GradientButton } from './Buttons';
 import { IconCheck } from './Icons';
 import { haptic } from '../lib/haptics';
 import { openSeg } from '../lib/youtube';
@@ -78,7 +79,7 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
   const fill = (
     <Animated.View pointerEvents="none" style={[styles.fill, fillStyle]}>
       <LinearGradient
-        colors={done ? ['rgba(240,179,126,0)', 'rgba(240,179,126,0.16)'] : ['rgba(124,58,237,0)', 'rgba(124,58,237,0.30)']}
+        colors={done ? ['rgba(242,179,126,0)', 'rgba(242,179,126,0.18)'] : ['rgba(209,59,240,0.04)', 'rgba(142,45,226,0.38)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
@@ -96,22 +97,20 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
       {done && (
         <View style={styles.status}>
           <IconCheck size={13} color={C.accent} strokeWidth={2.4} />
-          <Text style={styles.statusText}>Done</Text>
+          <Text style={styles.statusText}>DONE</Text>
         </View>
       )}
     </View>
   );
 
-  const action = (
-    <Pressable
+  const action = isReview || !done ? (
+    <GradientButton
+      label={isReview ? 'Questions' : 'Start'}
       onPress={() => { haptic.nav(); isReview ? doFlip() : openSeg(ep.segs[0]); }}
-      style={({ pressed }) => [done ? styles.btnGlass : styles.btn, pressed && { transform: [{ scale: 0.96 }] }]}
-      hitSlop={6}
-      accessibilityRole="button"
-      accessibilityLabel={isReview ? 'Show questions' : `Start ${ep.name} on YouTube`}
-    >
-      <Text style={done ? styles.btnGlassText : styles.btnText}>{isReview ? 'Questions' : done ? 'Rewatch' : 'Start'}</Text>
-    </Pressable>
+      a11y={isReview ? 'Show questions' : `Start ${ep.name} on YouTube`}
+    />
+  ) : (
+    <BlackButton label="Rewatch" onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} a11y={`Rewatch ${ep.name} on YouTube`} />
   );
 
   return (
@@ -146,7 +145,7 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
                     <Pressable
                       key={i}
                       onPress={() => { haptic.nav(); openSeg(s); }}
-                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: 'rgba(255,255,255,0.06)' }]}
+                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: 'rgba(199,125,255,0.12)' }]}
                       accessibilityRole="link"
                       accessibilityLabel={`Play video ${i + 1}: ${s.title}`}
                     >
@@ -190,27 +189,23 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
 }
 
 const styles = StyleSheet.create({
-  shadow: { borderRadius: R.card, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 22, shadowOffset: { width: 0, height: 10 } },
+  shadow: { borderRadius: R.card, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
   face: { backfaceVisibility: 'hidden' },
   pad: { flex: 1, padding: S.xl },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   dot: { width: 5, height: 5, borderRadius: 3 },
   status: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statusText: { fontFamily: FONT[500], fontSize: 12, color: C.accent },
+  statusText: { fontFamily: FONT[700], fontSize: 10, letterSpacing: 1.4, color: C.accent },
   title: { marginTop: S.md },
   sub: { marginTop: S.sm },
-  list: { marginTop: S.md, gap: 2 },
-  item: { flexDirection: 'row', gap: S.sm, paddingVertical: 6, paddingHorizontal: 6, marginHorizontal: -6, borderRadius: R.sm },
-  itemNum: { fontFamily: FONT[500], fontSize: 13.5, lineHeight: 20, color: C.muted, width: 18 },
+  list: { marginTop: S.md, gap: S.sm },
+  item: { flexDirection: 'row', alignItems: 'center', gap: S.sm, paddingVertical: S.sm + 1, paddingHorizontal: S.md, borderRadius: R.sm, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
+  itemNum: { fontFamily: FONT[700], fontSize: 12.5, lineHeight: 19, color: C.label, width: 18 },
   itemMeta: { color: C.faint, fontVariant: ['tabular-nums'] },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  btn: { backgroundColor: C.light, borderRadius: R.md, paddingHorizontal: S.xl, height: 40, justifyContent: 'center' },
-  btnText: { fontFamily: FONT[600], fontSize: 14, color: C.onLight },
-  btnGlass: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: GLASS.borderHi, borderRadius: R.md, paddingHorizontal: S.lg + 2, height: 40, justifyContent: 'center' },
-  btnGlassText: { fontFamily: FONT[500], fontSize: 14, color: C.ink },
   bullet: { flexDirection: 'row', gap: S.md, alignItems: 'flex-start' },
-  bulletDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: C.accent, marginTop: 9 },
+  bulletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.pink, marginTop: 8 },
   hint: { textAlign: 'center', marginTop: S.md, color: C.faint },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' },
-  fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 1.5 },
+  fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 2 },
 });
