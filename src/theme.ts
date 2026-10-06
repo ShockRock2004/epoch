@@ -2,77 +2,93 @@ import type { TextStyle } from 'react-native';
 import type { Phase } from './data/plan';
 
 /**
- * Epoch design tokens. One neutral slate ramp, one accent, and nothing else.
- * Depth comes from tonal steps and thin borders, never from glow.
+ * Epoch design tokens.
+ * The gradient is the environment; the glass is the surface; type is the hierarchy.
  */
 export const C = {
-  // Background → surfaces (each step is one notch lighter)
-  bg: '#05070A',
-  bg1: '#080C11',
-  bg2: '#0D1319',
-  card: '#151E27',
-  raised: '#1B2630',
-  hover: '#202D38',
+  // Base environment (darkest → lighter)
+  bg: '#05060A',
+  bg1: '#080B12',
+  bg2: '#0C1018',
 
-  border: '#283642',
-  border2: '#344452',
+  // Slate, for the few opaque pieces
+  slate1: '#111923',
+  slate2: '#151F2B',
+  slate3: '#1A2532',
 
-  ink: '#F1F5F9', // headings, primary text
-  ink2: '#A8B4C0', // secondary text
-  muted: '#74818E', // metadata
-  faint: '#5E6B77', // lowest-priority metadata
+  // Ambient light: lives in the background, never on whole surfaces
+  deepViolet: '#3B0764',
+  violet: '#6D28D9',
+  electric: '#7C3AED',
+  indigo: '#4F46E5',
+  magenta: '#C026D3',
+  pink: '#D946EF',
 
-  accent: '#9AA7FF', // the only accent: selection, progress, small indicators
-  accentDim: 'rgba(154,167,255,0.14)',
-  accentLine: 'rgba(154,167,255,0.38)',
+  // Text
+  ink: '#F8FAFC', // primary
+  ink2: '#C7CBDA', // secondary, soft white
+  muted: '#8B90A7', // metadata
+  faint: '#626780', // lowest priority
 
-  light: '#E9EDF2', // primary button fill
-  onLight: '#0D1319',
+  // Small accents (selected states, progress, indicators)
+  accent: '#C4B5FD', // light violet, readable on dark glass
+  accentDim: 'rgba(167,139,250,0.20)',
+  accentLine: 'rgba(196,181,253,0.45)',
 
-  warn: '#D9A066', // used only for the "undo" hold, as a thin edge
+  // White contrast controls
+  light: '#F5F7FA',
+  onLight: '#0B1017',
+
+  warn: '#F0B37E',
 };
 
-/** Background: almost black, settling into charcoal. No visible banding. */
-export const BG_GRADIENT = ['#05070A', '#080C11', '#0D1319'] as const;
-export const BG_LOCATIONS = [0, 0.55, 1] as const;
+/** Glass recipe: blurred background + smoked tint + hairline border + faint top highlight. */
+export const GLASS = {
+  tint: 'rgba(18,22,38,0.48)',
+  tintStrong: 'rgba(16,20,32,0.80)',
+  tintSolid: '#0E1120', // inside modals: opaque, since a modal window has nothing behind it to blur
+  border: 'rgba(255,255,255,0.10)',
+  borderHi: 'rgba(255,255,255,0.16)',
+  highlight: 'rgba(255,255,255,0.06)',
+  activeFill: 'rgba(255,255,255,0.12)',
+  intensity: 38,
+};
 
-export const R = { sm: 8, md: 12, card: 16, lg: 20, pill: 999 };
+export const R = { sm: 10, md: 12, card: 18, lg: 22, pill: 999 };
 export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 };
 
-/** Sora, embedded at build time (one family per weight on Android). */
+/** Poppins, embedded at build time (one family name per weight on Android). */
 export const FONT = {
-  300: 'Sora_300Light',
-  400: 'Sora_400Regular',
-  500: 'Sora_500Medium',
-  600: 'Sora_600SemiBold',
-  700: 'Sora_600SemiBold',
-  800: 'Sora_700Bold',
+  400: 'Poppins_400Regular',
+  500: 'Poppins_500Medium',
+  600: 'Poppins_600SemiBold',
+  700: 'Poppins_700Bold',
 } as const;
 
-/** Type scale. Hierarchy comes from size and weight; colour stays neutral. */
-export const T: Record<'display' | 'title' | 'heading' | 'body' | 'secondary' | 'meta' | 'label', TextStyle> = {
-  display: { fontFamily: FONT[600], fontSize: 30, lineHeight: 36, letterSpacing: 1.5, color: C.ink },
-  title: { fontFamily: FONT[600], fontSize: 19, lineHeight: 25, letterSpacing: -0.3, color: C.ink },
-  heading: { fontFamily: FONT[600], fontSize: 24, lineHeight: 30, letterSpacing: -0.6, color: C.ink },
+/** Type scale. Hierarchy comes from size and weight; colour stays white-to-grey. */
+export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 'meta' | 'label', TextStyle> = {
+  display: { fontFamily: FONT[700], fontSize: 32, lineHeight: 40, letterSpacing: 1, color: C.ink },
+  heading: { fontFamily: FONT[600], fontSize: 26, lineHeight: 34, letterSpacing: -0.4, color: C.ink },
+  title: { fontFamily: FONT[600], fontSize: 18, lineHeight: 25, letterSpacing: -0.2, color: C.ink },
   body: { fontFamily: FONT[400], fontSize: 14.5, lineHeight: 22, color: C.ink2 },
-  secondary: { fontFamily: FONT[400], fontSize: 13.5, lineHeight: 19, color: C.ink2 },
-  meta: { fontFamily: FONT[400], fontSize: 12.5, lineHeight: 17, color: C.muted },
-  label: { fontFamily: FONT[500], fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, color: C.muted },
+  secondary: { fontFamily: FONT[400], fontSize: 13.5, lineHeight: 20, color: C.ink2 },
+  meta: { fontFamily: FONT[400], fontSize: 12.5, lineHeight: 18, color: C.muted },
+  label: { fontFamily: FONT[500], fontSize: 10.5, lineHeight: 15, letterSpacing: 1.1, color: C.muted },
 };
 
-/** Phase colours survive only as small dots, and are muted to sit in the slate palette. */
+/** Phase colours appear only as small dots. */
 export const PHASE_COLOR: Record<Phase, string> = {
-  1: '#8FA6D6',
-  2: '#A89BD4',
-  3: '#C9A27F',
-  4: '#C2B47E',
-  5: '#C996AE',
+  1: '#A5B4FC',
+  2: '#C4B5FD',
+  3: '#F0ABFC',
+  4: '#F9A8D4',
+  5: '#93C5FD',
 };
 
-/** Progress rings: one hue at four lightnesses, outer → inner. */
+/** Progress rings, outer → inner. */
 export const RING_COLORS = [
-  ['#C9D0FF', '#9AA7FF', '#7884D9', '#5A64AE'],
-  ['#C9D0FF', '#9AA7FF', '#7884D9', '#5A64AE'],
+  ['#EDE9FE', '#C4B5FD', '#A78BFA', '#8B5CF6'],
+  ['#F5D0FE', '#E879F9', '#C084FC', '#818CF8'],
 ];
 
 export const alpha = (hex: string, a: number) => {

@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BONUS, EPISODES, TOTAL } from '../data/plan';
 import { useStore, DEFAULT_START } from '../lib/store';
 import { activity, addDays, diffDays, episodesOn, hoursWatched, ringProgress, streaks, totalHours, PLAN_DAYS } from '../lib/schedule';
-import { C, FONT, R, RING_COLORS, S, T, fmtClock } from '../theme';
-import { Surface } from '../components/Surface';
+import { C, FONT, GLASS, R, RING_COLORS, S, T, fmtClock } from '../theme';
+import { Glass } from '../components/Glass';
 import { Rings } from '../components/Rings';
 import { ActivityChart } from '../components/ActivityChart';
 import { useTabClearance } from '../components/TabBar';
@@ -57,15 +57,15 @@ export function Progress() {
             { v: hrs.toFixed(1), l: `of ${totalHours().toFixed(0)} hours` },
             { v: `${st.current}`, l: st.best > st.current ? `day streak, best ${st.best}` : 'day streak' },
           ].map(s => (
-            <Surface key={s.l} style={styles.stat}>
+            <Glass key={s.l} style={styles.stat}>
               <Text style={styles.statV}>{s.v}</Text>
               <Text style={[T.meta, { marginTop: 2 }]}>{s.l}</Text>
-            </Surface>
+            </Glass>
           ))}
         </View>
 
         {clusters.map((cl, ci) => (
-          <Surface key={cl.title} style={styles.card}>
+          <Glass key={cl.title} style={styles.card}>
             <View style={styles.cardHead}>
               <Text style={T.title}>{cl.title}</Text>
               <Text style={[T.secondary, styles.num]}>{Math.round(cl.frac * 100)}%</Text>
@@ -88,10 +88,10 @@ export function Progress() {
                 ))}
               </View>
             </View>
-          </Surface>
+          </Glass>
         ))}
 
-        <Surface style={styles.card}>
+        <Glass style={styles.card}>
           <View style={styles.cardHead}>
             <Text style={T.title}>Activity</Text>
             <Text style={T.meta}>{todayIdx < 0 ? 'Not started' : todayIdx >= PLAN_DAYS ? 'Plan days over' : `Day ${todayIdx + 1} of ${PLAN_DAYS}`}</Text>
@@ -99,7 +99,7 @@ export function Progress() {
           <ActivityChart counts={counts} todayIndex={todayIdx} selected={sel} onSelect={i => { haptic.select(); setSel(sel === i ? null : i); }} width={chartW} />
           <View style={styles.key}>
             <View style={[styles.keySw, { backgroundColor: C.accent }]} /><Text style={T.meta}>2+ episodes</Text>
-            <View style={[styles.keySw, { backgroundColor: 'rgba(154,167,255,0.45)' }]} /><Text style={T.meta}>1</Text>
+            <View style={[styles.keySw, { backgroundColor: 'rgba(196,181,253,0.5)' }]} /><Text style={T.meta}>1</Text>
             <View style={styles.keyLine} /><Text style={T.meta}>daily target</Text>
           </View>
           {selDay && (
@@ -115,19 +115,19 @@ export function Progress() {
               ))}
             </View>
           )}
-        </Surface>
+        </Glass>
 
         <Text style={[T.label, { marginTop: S.lg, marginLeft: S.xs }]}>IF YOU FINISH EARLY</Text>
         {BONUS.map(s => (
           <Pressable key={s.id} onPress={() => { haptic.nav(); openSeg(s); }} accessibilityRole="link">
             {({ pressed }) => (
-              <Surface style={[styles.bonus, pressed && { backgroundColor: C.raised }]}>
+              <Glass style={[styles.bonus, pressed && { transform: [{ scale: 0.985 }] }]}>
                 <View style={styles.bonusPlay}><IconPlay size={11} color={C.ink2} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={[T.secondary, { color: C.ink }]} numberOfLines={2}>{s.title}</Text>
                   <Text style={[T.meta, { marginTop: 2 }]}>{s.channel} · {fmtClock(s.len)}</Text>
                 </View>
-              </Surface>
+              </Glass>
             )}
           </Pressable>
         ))}
@@ -136,7 +136,7 @@ export function Progress() {
       <Modal visible={settings} transparent animationType="fade" onRequestClose={() => setSettings(false)} statusBarTranslucent navigationBarTranslucent>
         <Pressable style={styles.scrim} onPress={() => setSettings(false)} accessibilityLabel="Close" />
         <View style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Surface tone="base" radius={R.lg} style={styles.sheet}>
+          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             <View style={styles.grab} />
             <Text style={T.title}>Settings</Text>
             <Text style={styles.sheetLabel}>DAY 1 IS</Text>
@@ -163,7 +163,7 @@ export function Progress() {
             >
               <Text style={styles.resetText}>{armed ? 'Tap again to erase all progress' : 'Reset progress'}</Text>
             </Pressable>
-          </Surface>
+          </Glass>
         </View>
       </Modal>
     </View>
@@ -172,7 +172,7 @@ export function Progress() {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.xs },
-  iconBtn: { width: 38, height: 38, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
+  iconBtn: { width: 38, height: 38, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: GLASS.border },
   stats: { flexDirection: 'row', gap: S.sm },
   stat: { flex: 1, paddingVertical: S.md + 2, paddingHorizontal: S.md },
   statV: { fontFamily: FONT[600], fontSize: 22, color: C.ink, fontVariant: ['tabular-nums'] },
@@ -187,21 +187,21 @@ const styles = StyleSheet.create({
   legendDot: { width: 7, height: 7, borderRadius: 4 },
   key: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: S.md },
   keySw: { width: 8, height: 8, borderRadius: 2, marginLeft: 4 },
-  keyLine: { width: 14, borderTopWidth: 1, borderStyle: 'dashed', borderColor: C.border2, marginLeft: 8 },
-  selBox: { marginTop: S.md, padding: S.md, borderRadius: R.md, backgroundColor: C.bg2, borderWidth: 1, borderColor: C.border, gap: 6 },
+  keyLine: { width: 14, borderTopWidth: 1, borderStyle: 'dashed', borderColor: GLASS.borderHi, marginLeft: 8 },
+  selBox: { marginTop: S.md, padding: S.md, borderRadius: R.md, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GLASS.border, gap: 6 },
   selRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bonus: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md + 2, borderRadius: R.card - 2 },
-  bonusPlay: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg2, borderWidth: 1, borderColor: C.border, paddingLeft: 2 },
-  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(3,5,8,0.78)' },
+  bonusPlay: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: GLASS.border, paddingLeft: 2 },
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(8,6,20,0.72)' },
   sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: S.md },
   sheet: { padding: S.xl, paddingTop: S.md },
-  grab: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.border2, marginBottom: S.lg },
+  grab: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: GLASS.borderHi, marginBottom: S.lg },
   sheetLabel: { ...T.label, marginTop: S.xl, marginBottom: S.sm },
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.border, padding: 3 },
+  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: R.md, borderWidth: 1, borderColor: GLASS.border, padding: 3 },
   stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
-  smallBtn: { paddingHorizontal: S.md, height: 32, borderRadius: R.pill, borderWidth: 1, borderColor: C.border, backgroundColor: C.card, justifyContent: 'center' },
+  smallBtn: { paddingHorizontal: S.md, height: 32, borderRadius: R.pill, borderWidth: 1, borderColor: GLASS.border, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center' },
   smallBtnText: { color: C.ink2, fontFamily: FONT[500], fontSize: 13 },
-  reset: { height: 44, borderRadius: R.sm + 2, borderWidth: 1, borderColor: C.border2, alignItems: 'center', justifyContent: 'center' },
+  reset: { height: 44, borderRadius: R.sm + 2, borderWidth: 1, borderColor: GLASS.borderHi, alignItems: 'center', justifyContent: 'center' },
   resetArmed: { borderColor: '#8A4B52', backgroundColor: 'rgba(138,75,82,0.16)' },
   resetText: { color: '#E3A7AE', fontFamily: FONT[500], fontSize: 14 },
 });

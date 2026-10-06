@@ -28,16 +28,16 @@ export function ActivityChart({ counts, todayIndex, selected, onSelect, width, h
     <View>
       <Svg width={width} height={height}>
         {[1, 2, 3, 4].map(v => (
-          <Line key={v} x1={0} x2={width} y1={y(v)} y2={y(v)} stroke={v === TARGET ? C.border2 : 'rgba(255,255,255,0.03)'} strokeWidth={1} strokeDasharray={v === TARGET ? '4 4' : undefined} />
+          <Line key={v} x1={0} x2={width} y1={y(v)} y2={y(v)} stroke={v === TARGET ? 'rgba(196,181,253,0.45)' : 'rgba(255,255,255,0.04)'} strokeWidth={1} strokeDasharray={v === TARGET ? '4 4' : undefined} />
         ))}
         {counts.map((v, i) => {
           const future = i > todayIndex;
           const isToday = i === todayIndex;
           const h = v > 0 ? Math.max(4, plotH - y(v)) : 3;
           const fill = selected === i ? C.ink
-            : future ? C.bg2
-            : v === 0 ? C.raised
-            : isToday || v >= TARGET ? C.accent : 'rgba(154,167,255,0.45)';
+            : future ? 'rgba(255,255,255,0.05)'
+            : v === 0 ? 'rgba(255,255,255,0.12)'
+            : v >= TARGET ? C.accent : 'rgba(196,181,253,0.5)';
           return <Rect key={i} x={i * slot + (slot - barW) / 2} y={plotH - h} width={barW} height={h} rx={Math.min(2.5, barW / 2)} fill={fill} />;
         })}
         {todayIndex >= 0 && todayIndex < n && (

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle, StyleProp } from 'react-native';
 import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { Episode, Seg } from '../data/plan';
 import { PHASES } from '../data/plan';
-import { C, FONT, PHASE_COLOR, R, S, T, fmtClock, fmtMins } from '../theme';
-import { Surface } from './Surface';
+import { C, FONT, GLASS, PHASE_COLOR, R, S, T, fmtClock, fmtMins } from '../theme';
+import { Glass } from './Glass';
 import { IconCheck } from './Icons';
 import { haptic } from '../lib/haptics';
 import { openSeg } from '../lib/youtube';
@@ -21,8 +22,22 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const pad2 = (n: number) => String(n).padStart(2, '0');
-const range = (s: Seg) => (s.ranged ? `${fmtClock(s.start)}–${s.end === s.len ? 'end' : fmtClock(s.end)}` : fmtClock(s.len));
+export const pad2 = (n: number) => String(n).padStart(2, '0');
+export const segRange = (s: Seg) => (s.ranged ? `${fmtClock(s.start)}–${s.end === s.len ? 'end' : fmtClock(s.end)}` : fmtClock(s.len));
+
+/** A bullet list with small violet markers. Shared by the card back and the detail sheet. */
+export function Bullets({ items, gap = S.sm }: { items: string[]; gap?: number }) {
+  return (
+    <View style={{ gap }}>
+      {items.map((b, i) => (
+        <View key={i} style={styles.bullet}>
+          <View style={styles.bulletDot} />
+          <Text style={[T.body, { flex: 1, color: C.ink }]}>{b}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Props) {
   const [flipped, setFlipped] = useState(false);
@@ -59,9 +74,15 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
     hold.value = withTiming(0, { duration: 280 });
   };
 
-  // Hold-to-complete: a quiet wash with a thin leading edge.
+  // Hold-to-complete: a soft violet sweep with a bright leading edge.
   const fill = (
-    <Animated.View pointerEvents="none" style={[styles.fill, { backgroundColor: done ? 'rgba(217,160,102,0.08)' : C.accentDim }, fillStyle]}>
+    <Animated.View pointerEvents="none" style={[styles.fill, fillStyle]}>
+      <LinearGradient
+        colors={done ? ['rgba(240,179,126,0)', 'rgba(240,179,126,0.16)'] : ['rgba(124,58,237,0)', 'rgba(124,58,237,0.30)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={[styles.fillEdge, { backgroundColor: done ? C.warn : C.accent }]} />
     </Animated.View>
   );
@@ -84,17 +105,17 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
   const action = (
     <Pressable
       onPress={() => { haptic.nav(); isReview ? doFlip() : openSeg(ep.segs[0]); }}
-      style={({ pressed }) => [done ? styles.btnQuiet : styles.btn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+      style={({ pressed }) => [done ? styles.btnGlass : styles.btn, pressed && { transform: [{ scale: 0.96 }] }]}
       hitSlop={6}
       accessibilityRole="button"
       accessibilityLabel={isReview ? 'Show questions' : `Start ${ep.name} on YouTube`}
     >
-      <Text style={done ? styles.btnQuietText : styles.btnText}>{isReview ? 'Questions' : done ? 'Rewatch' : 'Start'}</Text>
+      <Text style={done ? styles.btnGlassText : styles.btnText}>{isReview ? 'Questions' : done ? 'Rewatch' : 'Start'}</Text>
     </Pressable>
   );
 
   return (
-    <Animated.View style={[pressStyle, style]}>
+    <Animated.View style={[styles.shadow, pressStyle, style]}>
       <Pressable
         onPress={doFlip}
         onPressIn={onPressIn}
@@ -102,11 +123,11 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
         onLongPress={onLongPress}
         delayLongPress={HOLD_MS}
         accessibilityRole="button"
-        accessibilityLabel={`Episode ${ep.n}: ${ep.name}.${done ? ' Done.' : ''} Tap for summary, hold to mark ${done ? 'not done' : 'done'}.`}
+        accessibilityLabel={`Episode ${ep.n}: ${ep.name}.${done ? ' Done.' : ''} Tap for the summary, hold to mark ${done ? 'not done' : 'done'}.`}
       >
         {/* Front sets the card's height. */}
         <Animated.View style={[styles.face, frontStyle]} pointerEvents={flipped ? 'none' : 'box-none'}>
-          <Surface style={{ minHeight }}>
+          <Glass style={{ minHeight }} border={done ? C.accentLine : GLASS.border}>
             {fill}
             <View style={styles.pad}>
               {label}
@@ -114,7 +135,7 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
 
               {isReview && <Text style={[T.secondary, styles.sub]}>No video. {ep.review!.q.length} questions to answer out loud.</Text>}
               {!isReview && !multi && (
-                <Pressable onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} style={styles.single} accessibilityRole="link">
+                <Pressable onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} style={styles.sub} accessibilityRole="link">
                   <Text style={T.secondary} numberOfLines={2}>{ep.segs[0].title}</Text>
                   <Text style={[T.meta, { marginTop: 2 }]}>{ep.segs[0].channel}</Text>
                 </Pressable>
@@ -125,14 +146,14 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
                     <Pressable
                       key={i}
                       onPress={() => { haptic.nav(); openSeg(s); }}
-                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: C.raised }]}
+                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: 'rgba(255,255,255,0.06)' }]}
                       accessibilityRole="link"
                       accessibilityLabel={`Play video ${i + 1}: ${s.title}`}
                     >
                       <Text style={styles.itemNum}>{i + 1}.</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={T.secondary} numberOfLines={1}>{s.title}</Text>
-                        <Text style={[T.meta, styles.itemMeta]}>{s.channel} · {range(s)}</Text>
+                        <Text style={[T.meta, styles.itemMeta]}>{s.channel} · {segRange(s)}</Text>
                       </View>
                     </Pressable>
                   ))}
@@ -147,27 +168,21 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
                 {action}
               </View>
             </View>
-          </Surface>
+          </Glass>
         </Animated.View>
 
         {/* Back overlays the front at the same size. */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.face, backStyle]} pointerEvents={flipped ? 'box-none' : 'none'}>
-          <Surface style={StyleSheet.absoluteFill}>
+          <Glass style={StyleSheet.absoluteFill} border={done ? C.accentLine : GLASS.border}>
             {fill}
             <View style={styles.pad}>
               {label}
               <ScrollView style={{ flex: 1, marginTop: S.md }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                <Text style={T.body}>{ep.summary}</Text>
-                {isReview && ep.review!.q.map((q, i) => (
-                  <View key={i} style={styles.qRow}>
-                    <Text style={styles.itemNum}>{i + 1}.</Text>
-                    <Text style={[T.secondary, { flex: 1 }]}>{q}</Text>
-                  </View>
-                ))}
+                <Bullets items={ep.points} />
               </ScrollView>
               <Text style={[T.meta, styles.hint]}>Tap to flip back · Hold to mark {done ? 'not done' : 'done'}</Text>
             </View>
-          </Surface>
+          </Glass>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -175,6 +190,7 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
 }
 
 const styles = StyleSheet.create({
+  shadow: { borderRadius: R.card, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 22, shadowOffset: { width: 0, height: 10 } },
   face: { backfaceVisibility: 'hidden' },
   pad: { flex: 1, padding: S.xl },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
@@ -183,17 +199,17 @@ const styles = StyleSheet.create({
   statusText: { fontFamily: FONT[500], fontSize: 12, color: C.accent },
   title: { marginTop: S.md },
   sub: { marginTop: S.sm },
-  single: { marginTop: S.sm },
   list: { marginTop: S.md, gap: 2 },
   item: { flexDirection: 'row', gap: S.sm, paddingVertical: 6, paddingHorizontal: 6, marginHorizontal: -6, borderRadius: R.sm },
-  itemNum: { fontFamily: FONT[500], fontSize: 13.5, lineHeight: 19, color: C.muted, width: 18 },
+  itemNum: { fontFamily: FONT[500], fontSize: 13.5, lineHeight: 20, color: C.muted, width: 18 },
   itemMeta: { color: C.faint, fontVariant: ['tabular-nums'] },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  btn: { backgroundColor: C.light, borderRadius: R.sm + 2, paddingHorizontal: S.lg + 2, height: 36, justifyContent: 'center' },
+  btn: { backgroundColor: C.light, borderRadius: R.md, paddingHorizontal: S.xl, height: 40, justifyContent: 'center' },
   btnText: { fontFamily: FONT[600], fontSize: 14, color: C.onLight },
-  btnQuiet: { borderWidth: 1, borderColor: C.border2, borderRadius: R.sm + 2, paddingHorizontal: S.lg, height: 36, justifyContent: 'center' },
-  btnQuietText: { fontFamily: FONT[500], fontSize: 14, color: C.ink2 },
-  qRow: { flexDirection: 'row', gap: S.sm, marginTop: S.md },
+  btnGlass: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: GLASS.borderHi, borderRadius: R.md, paddingHorizontal: S.lg + 2, height: 40, justifyContent: 'center' },
+  btnGlassText: { fontFamily: FONT[500], fontSize: 14, color: C.ink },
+  bullet: { flexDirection: 'row', gap: S.md, alignItems: 'flex-start' },
+  bulletDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: C.accent, marginTop: 9 },
   hint: { textAlign: 'center', marginTop: S.md, color: C.faint },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' },
   fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 1.5 },

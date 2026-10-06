@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInLeft, FadeInRight } from 'react-native-reanimated';
+import Animated, {
+  Easing, FadeIn, FadeInDown, FadeInLeft, FadeInRight, useAnimatedStyle, useSharedValue, withRepeat, withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODES, TOTAL } from '../data/plan';
 import { useStore } from '../lib/store';
 import { dayNumber, PLAN_DAYS } from '../lib/schedule';
-import { C, FONT, R, S, T } from '../theme';
+import { C, FONT, GLASS, R, S, T } from '../theme';
 import { EpisodeCard } from '../components/EpisodeCard';
-import { Surface } from '../components/Surface';
+import { Glass } from '../components/Glass';
 import { IconChevron } from '../components/Icons';
 import { TopicArt, TOPIC_LABEL } from '../components/illustrations';
 import { useTabClearance } from '../components/TabBar';
@@ -23,7 +25,7 @@ const dateParts = (k: string) => {
   };
 };
 
-const ART = 132;
+const ORB = 148;
 
 export function Home() {
   const { p, today, toggle } = useStore();
@@ -61,39 +63,50 @@ export function Home() {
 
   useEffect(() => { setOffset(0); }, [today]);
 
-  const enter = (dir > 0 ? FadeInRight : FadeInLeft).duration(260).easing(Easing.out(Easing.quad));
+  // The orb drifts a few pixels over several seconds: alive, never busy.
+  const drift = useSharedValue(0);
+  useEffect(() => {
+    drift.value = withRepeat(withTiming(1, { duration: 5200, easing: Easing.inOut(Easing.sin) }), -1, true);
+  }, [drift]);
+  const driftStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -4 * drift.value }] }));
+
+  const enter = (dir > 0 ? FadeInRight : FadeInLeft).duration(280).easing(Easing.out(Easing.quad));
 
   return (
     <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.xxxl, paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
-      {/* 1 · Date */}
+      {/* Date */}
       <View style={styles.header}>
         <Text style={T.display} accessibilityRole="header">{date}</Text>
         <Text style={styles.weekday}>{weekday}</Text>
       </View>
 
-      {/* 2 · Topic, with paging arrows */}
+      {/* Topic orb, with paging arrows */}
       <View style={styles.heroRow}>
         <NavButton dir="left" enabled={canPrev} onPress={() => go(-1)} />
-        <Animated.View key={topic} entering={FadeIn.duration(240)}>
-          <TopicArt topic={topic} size={ART} />
+        <Animated.View style={driftStyle}>
+          <Animated.View key={topic} entering={FadeIn.duration(320)}>
+            <TopicArt topic={topic} size={ORB} />
+          </Animated.View>
         </Animated.View>
         <NavButton dir="right" enabled={canNext} onPress={() => go(1)} />
       </View>
       <View style={styles.studyRow}>
         <Text style={styles.studyDay}>{dayLabel}</Text>
-        <Text style={styles.studySep}>·</Text>
+        <View style={styles.studyDot} />
         <Text style={styles.studyTopic}>{TOPIC_LABEL[topic]}</Text>
       </View>
 
-      {/* 3–5 · Episodes */}
+      {/* Episodes */}
       <View style={styles.section}>
         <Text style={T.meta}>
           {nums.length > 1 ? `Episodes ${nums[0]}–${nums[nums.length - 1]}` : `Episode ${nums[0]}`}
           <Text style={{ color: C.faint }}> of {TOTAL}</Text>
         </Text>
         {offset !== 0 && (
-          <Pressable onPress={() => { haptic.nav(); setDir(offset > 0 ? -1 : 1); setOffset(0); }} style={styles.todayChip} hitSlop={8} accessibilityRole="button">
-            <Text style={styles.todayChipText}>Back to today</Text>
+          <Pressable onPress={() => { haptic.nav(); setDir(offset > 0 ? -1 : 1); setOffset(0); }} hitSlop={8} accessibilityRole="button">
+            <Glass radius={R.pill} style={styles.todayChip} border={C.accentLine} tint="rgba(124,58,237,0.20)">
+              <Text style={styles.todayChipText}>Back to today</Text>
+            </Glass>
           </Pressable>
         )}
       </View>
@@ -105,13 +118,13 @@ export function Home() {
       </Animated.View>
 
       {(todayDone || allDone) && (
-        <Animated.View entering={FadeIn.duration(240)} style={styles.cards}>
-          <Surface tone="base" style={styles.note}>
-            <Text style={[T.secondary, { color: C.ink }]}>{allDone ? 'Plan complete. All 100 episodes.' : "That's today done."}</Text>
+        <Animated.View entering={FadeInDown.duration(300)} style={[styles.cards, { marginTop: S.md }]}>
+          <Glass style={styles.note}>
+            <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[500] }]}>{allDone ? 'Plan complete. All 100 episodes.' : "That's today done."}</Text>
             <Text style={[T.meta, { marginTop: 2 }]}>
               {allDone ? 'Do the mock interviews out loud with a friend.' : 'Use → to keep going, or move on to your other targets.'}
             </Text>
-          </Surface>
+          </Glass>
         </Animated.View>
       )}
     </ScrollView>
@@ -124,27 +137,29 @@ function NavButton({ dir, enabled, onPress }: { dir: 'left' | 'right'; enabled: 
       onPress={onPress}
       disabled={!enabled}
       hitSlop={12}
-      style={({ pressed }) => [styles.navBtn, !enabled && { opacity: 0.35 }, pressed && { backgroundColor: C.hover }]}
+      style={({ pressed }) => [!enabled && { opacity: 0.35 }, pressed && { transform: [{ scale: 0.92 }] }]}
       accessibilityRole="button"
       accessibilityLabel={dir === 'left' ? 'Previous episodes' : 'Next episodes'}
     >
-      <IconChevron dir={dir} size={18} color={C.ink2} strokeWidth={2} />
+      <Glass radius={22} style={styles.navBtn} border={GLASS.borderHi}>
+        <IconChevron dir={dir} size={18} color={C.ink} strokeWidth={2} />
+      </Glass>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   header: { alignItems: 'center' },
-  weekday: { fontFamily: FONT[400], fontSize: 15, color: C.muted, marginTop: S.xs },
+  weekday: { fontFamily: FONT[400], fontSize: 15, color: C.ink2, opacity: 0.8, marginTop: 0 },
   heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.xxl, marginTop: S.xxxl },
-  navBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
-  studyRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'baseline', gap: S.sm, marginTop: S.lg },
+  navBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  studyRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: S.sm, marginTop: S.xl },
   studyDay: { fontFamily: FONT[600], fontSize: 15, color: C.ink },
-  studySep: { fontFamily: FONT[400], fontSize: 15, color: C.faint },
+  studyDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: C.accent },
   studyTopic: { fontFamily: FONT[400], fontSize: 15, color: C.ink2 },
-  section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.xl, marginTop: S.xxxl, marginBottom: S.md, minHeight: 28 },
-  todayChip: { paddingHorizontal: S.md, height: 28, borderRadius: R.pill, justifyContent: 'center', backgroundColor: C.card, borderWidth: 1, borderColor: C.border2 },
-  todayChipText: { fontFamily: FONT[500], fontSize: 12, color: C.accent },
+  section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.xl, marginTop: S.xxxl, marginBottom: S.md, minHeight: 30 },
+  todayChip: { paddingHorizontal: S.md, height: 30, justifyContent: 'center' },
+  todayChipText: { fontFamily: FONT[500], fontSize: 12, color: C.ink },
   cards: { paddingHorizontal: S.lg, gap: S.md },
-  note: { padding: S.lg, marginTop: S.md },
+  note: { padding: S.lg },
 });

@@ -1,6 +1,8 @@
 // Hand-drawn topic glyphs: one clean line icon per topic on a 64-unit grid,
-// shown on a quiet slate disc. Strokes are neutral; only small dots take the accent.
+// shown inside a glass orb. Strokes are white; small dots take the light-violet accent.
 import React from 'react';
+import { View } from 'react-native';
+import { Glass } from '../Glass';
 import Svg, { Defs, RadialGradient, LinearGradient, Stop, Circle, Ellipse, Line, Path, Rect, G } from 'react-native-svg';
 import type { TopicKey } from '../../data/plan';
 
@@ -102,7 +104,7 @@ const GLYPH: Record<TopicKey, React.ReactElement> = {
       {[[10, 18], [10, 32], [10, 46]].flatMap(([x, y]) => [[32, 12], [32, 32], [32, 52]].map(([u, v]) => <Line key={`${x}${y}${u}${v}`} x1={x} y1={y} x2={u} y2={v} opacity={0.45} />))}
       {[[32, 12], [32, 32], [32, 52]].flatMap(([x, y]) => [[54, 24], [54, 40]].map(([u, v]) => <Line key={`b${x}${y}${u}${v}`} x1={x} y1={y} x2={u} y2={v} opacity={0.45} />))}
       {[[10, 18], [10, 32], [10, 46], [32, 12], [32, 32], [32, 52], [54, 24], [54, 40]].map(([x, y]) => (
-        <Circle key={`n${x}${y}`} cx={x} cy={y} r={4.2} fill="#172029" />
+        <Circle key={`n${x}${y}`} cx={x} cy={y} r={4.2} fill="#2A2350" />
       ))}
     </G>
   ),
@@ -143,8 +145,8 @@ const GLYPH: Record<TopicKey, React.ReactElement> = {
       {[[8, 1.2], [22, 3.4], [36, 1.6], [50, 4.2]].map(([x, w]) => (
         <Line key={x} x1={x + 3} y1={16} x2={32} y2={48} strokeWidth={w} opacity={0.35 + w / 7} />
       ))}
-      {[8, 22, 36, 50].map(x => <Rect key={`t${x}`} x={x} y={8} width={7} height={7} rx={2} fill="#172029" />)}
-      <Circle cx={32} cy={50} r={6} fill="#172029" />
+      {[8, 22, 36, 50].map(x => <Rect key={`t${x}`} x={x} y={8} width={7} height={7} rx={2} fill="#2A2350" />)}
+      <Circle cx={32} cy={50} r={6} fill="#2A2350" />
     </G>
   ),
   transformer: (
@@ -175,23 +177,23 @@ const GLYPH: Record<TopicKey, React.ReactElement> = {
       <Path d="M12 8h22l10 10v32a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" />
       <Path d="M34 8v10h10" />
       <Path d="M15 26h18M15 33h12M15 40h8" opacity={0.6} />
-      <Circle cx={43} cy={43} r={9} fill="#172029" />
+      <Circle cx={43} cy={43} r={9} fill="#2A2350" />
       <Line x1={49.5} y1={49.5} x2={57} y2={57} />
     </G>
   ),
   'fine-tuning': (
     <G>
       <Line x1={14} y1={8} x2={14} y2={56} /><Line x1={32} y1={8} x2={32} y2={56} /><Line x1={50} y1={8} x2={50} y2={56} />
-      <Rect x={8} y={36} width={12} height={8} rx={3} fill="#172029" />
-      <Rect x={26} y={16} width={12} height={8} rx={3} fill="#172029" />
-      <Rect x={44} y={28} width={12} height={8} rx={3} fill="#172029" />
+      <Rect x={8} y={36} width={12} height={8} rx={3} fill="#2A2350" />
+      <Rect x={26} y={16} width={12} height={8} rx={3} fill="#2A2350" />
+      <Rect x={44} y={28} width={12} height={8} rx={3} fill="#2A2350" />
     </G>
   ),
   agents: (
     <G>
       <Ellipse cx={32} cy={32} rx={26} ry={16} strokeDasharray="3 4" opacity={0.7} />
       <Path d="M32 32L8 26M32 32l18-13M32 32l20 12M32 32l-10 15" opacity={0.5} />
-      <Circle cx={32} cy={32} r={7} fill="#172029" />
+      <Circle cx={32} cy={32} r={7} fill="#2A2350" />
       {DOT(8, 26, 3.2)}{DOT(50, 19, 3.2)}{DOT(52, 44, 3.2)}{DOT(22, 47, 3.2)}
     </G>
   ),
@@ -228,34 +230,47 @@ export const TOPIC_LABEL: Record<TopicKey, string> = {
   agents: 'Agents', evals: 'Evaluation', prompting: 'Prompting', review: 'Checkpoint',
 };
 
-/** The hero: one quiet slate disc holding a single line glyph. */
-export function TopicArt({ topic, size = 132 }: { topic: TopicKey; size?: number }) {
+/** The hero: a floating glass orb holding one white line glyph, lit from behind by violet. */
+export function TopicArt({ topic, size = 148 }: { topic: TopicKey; size?: number }) {
+  const halo = size * 1.7;
   return (
-    <Svg width={size} height={size} viewBox="0 0 132 132">
-      <Defs>
-        <LinearGradient id="disc" x1="0.2" y1="0" x2="0.8" y2="1">
-          <Stop offset="0" stopColor="#1E2933" />
-          <Stop offset="1" stopColor="#111921" />
-        </LinearGradient>
-        <RadialGradient id="lift" cx="0.5" cy="0.38" r="0.6">
-          <Stop offset="0" stopColor="#9AA7FF" stopOpacity="0.07" />
-          <Stop offset="1" stopColor="#9AA7FF" stopOpacity="0" />
-        </RadialGradient>
-        <LinearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#9AA7FF" /><Stop offset="1" stopColor="#9AA7FF" />
-        </LinearGradient>
-      </Defs>
-      <Circle cx={66} cy={66} r={65} fill="url(#disc)" stroke="#283642" strokeWidth={1} />
-      <Circle cx={66} cy={66} r={64} fill="url(#lift)" />
-      <G transform="translate(36 36) scale(0.9375)" fill="none" stroke="#DDE3EA" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-        {GLYPH[topic]}
-      </G>
-    </Svg>
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Soft violet light behind the orb */}
+      <Svg width={halo} height={halo} style={{ position: 'absolute' }} pointerEvents="none">
+        <Defs>
+          <RadialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+            <Stop offset="0.3" stopColor="#7C3AED" stopOpacity={0.45} />
+            <Stop offset="0.65" stopColor="#4F46E5" stopOpacity={0.14} />
+            <Stop offset="1" stopColor="#4F46E5" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={halo / 2} cy={halo / 2} r={halo / 2} fill="url(#halo)" />
+      </Svg>
+      <Glass radius={size / 2} style={{ width: size, height: size }} tint="rgba(24,20,48,0.38)" border="rgba(255,255,255,0.16)">
+        <Svg width={size} height={size} viewBox="0 0 148 148">
+          <Defs>
+            <LinearGradient id="orbLight" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+              <Stop offset="0" stopColor="#A78BFA" stopOpacity={0.32} />
+              <Stop offset="0.55" stopColor="#6D28D9" stopOpacity={0.10} />
+              <Stop offset="1" stopColor="#4F46E5" stopOpacity={0.22} />
+            </LinearGradient>
+            <LinearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor="#DDD6FE" /><Stop offset="1" stopColor="#C4B5FD" />
+            </LinearGradient>
+          </Defs>
+          <Circle cx={74} cy={74} r={74} fill="url(#orbLight)" />
+          <Path d="M30 52 A 50 50 0 0 1 64 25" stroke="#FFFFFF" strokeOpacity={0.45} strokeWidth={2} strokeLinecap="round" fill="none" />
+          <G transform="translate(38 38) scale(1.125)" fill="none" stroke="#FFFFFF" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
+            {GLYPH[topic]}
+          </G>
+        </Svg>
+      </Glass>
+    </View>
   );
 }
 
 /** Small version of a glyph for lists. */
-export function TopicGlyph({ topic, size = 22, color = '#A8B4C0' }: { topic: TopicKey; size?: number; color?: string }) {
+export function TopicGlyph({ topic, size = 22, color = '#E9E5FF' }: { topic: TopicKey; size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 64 64">
       <Defs>

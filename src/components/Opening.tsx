@@ -4,9 +4,9 @@ import Animated, {
   Easing, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ambient } from './Ambient';
 import Svg, { Circle } from 'react-native-svg';
-import { BG_GRADIENT, BG_LOCATIONS, C, FONT } from '../theme';
+import { C, FONT } from '../theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -55,7 +55,7 @@ export function Opening({ onDone }: { onDone: () => void }) {
   return (
     <Animated.View style={[StyleSheet.absoluteFill, rootStyle]}>
       <Pressable style={styles.center} onPress={finish} accessibilityLabel="Skip intro">
-        <LinearGradient colors={BG_GRADIENT} locations={BG_LOCATIONS} style={StyleSheet.absoluteFill} />
+        <Ambient />
         <Animated.View style={markStyle}>
           <Svg width={SIZE} height={SIZE}>
             <AnimatedCircle

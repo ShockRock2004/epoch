@@ -23,6 +23,13 @@ describe('plan data', () => {
       expect(e.secs).toBeLessThan(40 * 60);
     }
   });
+  test('every episode has 2–4 short bullet points', () => {
+    for (const e of EPISODES) {
+      expect(e.points.length).toBeGreaterThanOrEqual(2);
+      expect(e.points.length).toBeLessThanOrEqual(4);
+      for (const b of e.points) expect(b.length).toBeLessThanOrEqual(130);
+    }
+  });
   test('ring groups cover every episode exactly once', () => {
     const all = RING_CLUSTERS.flatMap(c => c.rings.flatMap(ringMembers)).sort((a, b) => a - b);
     expect(all).toEqual(EPISODES.map(e => e.n));
