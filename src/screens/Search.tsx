@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODES, Episode, PHASES, Phase } from '../data/plan';
 import { TOPIC_LABEL, TopicGlyph } from '../components/illustrations';
 import { useStore } from '../lib/store';
-import { todayView } from '../lib/schedule';
 import { C, FONT, PHASE_COLOR, R, S, T, fmtMins } from '../theme';
 import { Surface } from '../components/Surface';
 import { EpisodeCard } from '../components/EpisodeCard';
@@ -77,7 +76,7 @@ export function Search() {
   const [open, setOpen] = useState<Episode | null>(null);
 
   const query = q.trim().toLowerCase();
-  const todays = todayView(p, today).shown;
+  const todays = p.days[today]?.base ?? []; // the same pair Home opens on
   const extraFilters = (kind !== 'all' ? 1 : 0) + (len !== 'all' ? 1 : 0) + (sort !== 'plan' ? 1 : 0);
   const anyFilter = !!query || phase !== 0 || status !== 'all' || extraFilters > 0;
 
