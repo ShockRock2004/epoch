@@ -243,8 +243,8 @@ export function TopicArt({ topic, size = 150 }: { topic: TopicKey; size?: number
       <Svg width={halo} height={halo} style={{ position: 'absolute' }}>
         <Defs>
           <RadialGradient id="heroGlow" cx="0.5" cy="0.5" r="0.5">
-            <Stop offset="0" stopColor="#D946EF" stopOpacity={0.55} />
-            <Stop offset="0.45" stopColor="#8A2BE2" stopOpacity={0.22} />
+            <Stop offset="0" stopColor="#D946EF" stopOpacity={0.38} />
+            <Stop offset="0.45" stopColor="#8A2BE2" stopOpacity={0.12} />
             <Stop offset="1" stopColor="#8A2BE2" stopOpacity={0} />
           </RadialGradient>
           <LinearGradient id="gloss" x1="0.2" y1="0" x2="0.8" y2="1">
@@ -257,7 +257,7 @@ export function TopicArt({ topic, size = 150 }: { topic: TopicKey; size?: number
           </LinearGradient>
         </Defs>
         <Circle cx={halo / 2} cy={halo / 2} r={halo / 2} fill="url(#heroGlow)" />
-        {layer('#D946EF', 9, 0.16)}
+        {layer('#D946EF', 9, 0.10)}
         {layer('#C026D3', 6, 0.28)}
         {layer('url(#gloss)', 3.6, 1)}
         {layer('#FFFFFF', 1.1, 0.5, -1.2, -1.4)}

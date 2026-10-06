@@ -3,13 +3,13 @@ import type { Phase } from './data/plan';
 
 /**
  * Epoch design tokens.
- * A black screen lit violet from the top, dark purple panels, and magenta-to-violet
- * gradient controls. White type does the talking; small uppercase labels carry structure.
+ * A near-black screen with a mild violet glow at the top, real blurred glass surfaces,
+ * and magenta-to-violet only as accent. White type does the talking.
  */
 export const C = {
-  bg: '#07040C',
-  bg1: '#0C0716',
-  bg2: '#120A20',
+  bg: '#050407',
+  bg1: '#09070D',
+  bg2: '#0E0B14',
 
   // Light in the environment
   deepViolet: '#3B0A6E',
@@ -42,39 +42,40 @@ export const C = {
 /** The signature gradient: magenta → violet → deep purple, left to right. */
 export const GRAD = ['#D13BF0', '#8E2DE2', '#4A0E8F'] as const;
 
-/** Panels: dark purple surfaces with a hairline violet edge and a soft shadow. */
+/** Glass: real expo-blur over the environment, a smoked tint, a white hairline and a faint top sheen. */
 export const GLASS = {
-  panel: ['#1F1036', '#140A25'] as const, // top → bottom
-  tintSolid: '#140A24',
-  field: 'rgba(0,0,0,0.36)', // input-like rows inside panels
-  border: 'rgba(199,125,255,0.14)',
-  borderHi: 'rgba(199,125,255,0.28)',
-  highlight: 'rgba(255,255,255,0.05)',
+  tint: 'rgba(22,19,30,0.50)',
+  tintSolid: '#110D18', // modals: a separate window, nothing behind to blur
+  field: 'rgba(255,255,255,0.05)', // input-like rows inside glass
+  border: 'rgba(255,255,255,0.10)',
+  borderHi: 'rgba(255,255,255,0.18)',
+  highlight: 'rgba(255,255,255,0.07)',
   activeFill: '#FFFFFF',
+  intensity: 45,
 };
 
 export const R = { sm: 8, md: 10, card: 14, lg: 18, pill: 999 };
 export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 };
 
-/** Montserrat, embedded at build time (one family name per weight on Android). */
+/** Sora, embedded at build time (one family name per weight on Android). */
 export const FONT = {
-  400: 'Montserrat_400Regular',
-  500: 'Montserrat_500Medium',
-  600: 'Montserrat_600SemiBold',
-  700: 'Montserrat_700Bold',
-  800: 'Montserrat_800ExtraBold',
+  400: 'Sora_400Regular',
+  500: 'Sora_500Medium',
+  600: 'Sora_600SemiBold',
+  700: 'Sora_700Bold',
+  800: 'Sora_800ExtraBold',
 } as const;
 
 /** Type scale, modelled on the reference: magenta greeting, heavy white headline, tracked caps. */
 export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 'meta' | 'label' | 'greeting', TextStyle> = {
-  greeting: { fontFamily: FONT[700], fontSize: 15, lineHeight: 20, color: C.accent },
-  display: { fontFamily: FONT[800], fontSize: 34, lineHeight: 41, letterSpacing: 0.5, color: C.ink },
+  greeting: { fontFamily: FONT[600], fontSize: 14, lineHeight: 20, color: C.accent },
+  display: { fontFamily: FONT[700], fontSize: 31, lineHeight: 38, letterSpacing: 0.5, color: C.ink },
   heading: { fontFamily: FONT[800], fontSize: 26, lineHeight: 32, letterSpacing: 0.2, color: C.ink },
-  title: { fontFamily: FONT[700], fontSize: 17.5, lineHeight: 24, color: C.ink },
+  title: { fontFamily: FONT[600], fontSize: 17, lineHeight: 24, color: C.ink },
   body: { fontFamily: FONT[500], fontSize: 14, lineHeight: 21, color: C.ink2 },
   secondary: { fontFamily: FONT[500], fontSize: 13, lineHeight: 19, color: C.ink2 },
   meta: { fontFamily: FONT[500], fontSize: 12, lineHeight: 17, color: C.muted },
-  label: { fontFamily: FONT[700], fontSize: 9.5, lineHeight: 14, letterSpacing: 1.6, color: C.label },
+  label: { fontFamily: FONT[600], fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4, color: C.label },
 };
 
 /** Phase colours appear only as small dots. */
@@ -86,10 +87,10 @@ export const PHASE_COLOR: Record<Phase, string> = {
   5: '#818CF8',
 };
 
-/** Ring / bar colours: all from the one magenta-violet family. */
+/** Apple-Watch-style rings, outer → inner: vivid, distinct, no green. */
 export const RING_COLORS = [
-  ['#E879F9', '#C77DFF', '#A855F7', '#7C3AED'],
-  ['#F0ABFC', '#D946EF', '#9333EA', '#6D28D9'],
+  ['#FF375F', '#E040FB', '#9D7BFF', '#5E9EFF'],
+  ['#FF375F', '#E040FB', '#9D7BFF', '#5E9EFF'],
 ];
 
 export const alpha = (hex: string, a: number) => {

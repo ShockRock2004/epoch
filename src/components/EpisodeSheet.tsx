@@ -47,7 +47,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
     <Modal visible={!!ep} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
       <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close">
-          <LinearGradient colors={['rgba(7,4,12,0.6)', 'rgba(40,8,70,0.88)']} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={['rgba(5,4,7,0.55)', 'rgba(5,4,7,0.92)']} style={StyleSheet.absoluteFill} />
         </Pressable>
       </Animated.View>
 
@@ -57,7 +57,7 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
           style={[styles.wrap, { top: insets.top + S.xl, paddingBottom: insets.bottom + S.md, maxHeight: height }]}
           pointerEvents="box-none"
         >
-          <Glass radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
+          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             {/* Top bar */}
             <View style={styles.bar}>
               <View style={styles.stepper}>

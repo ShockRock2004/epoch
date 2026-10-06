@@ -58,9 +58,10 @@ function Chip({ label, on, onPress, dot, solid }: { label: string; on: boolean; 
     <Pressable onPress={() => { haptic.select(); onPress(); }} accessibilityRole="button" accessibilityState={{ selected: on }}>
       <Glass
         radius={R.sm}
-        tint={on ? C.light : 'rgba(0,0,0,0.38)'}
-        border={on ? C.light : GLASS.borderHi}
-        highlight={false}
+        variant={solid ? 'solid' : 'glass'}
+        tint={on ? C.light : solid ? 'rgba(255,255,255,0.06)' : undefined}
+        border={on ? C.light : GLASS.border}
+        highlight={!on && !solid}
         style={styles.chip}
       >
         <View style={styles.chipRow}>
@@ -134,7 +135,7 @@ export function Search() {
       </View>
 
       <View style={styles.searchRow}>
-        <Glass radius={R.md} tint="rgba(0,0,0,0.42)" border={GLASS.borderHi} highlight={false} style={styles.input}>
+        <Glass radius={R.md} border={GLASS.borderHi} style={styles.input}>
           <View style={styles.inputRow}>
             <IconSearch size={17} color={C.ink2} />
             <TextInput
@@ -153,7 +154,7 @@ export function Search() {
           </View>
         </Glass>
         <Pressable onPress={() => { haptic.nav(); setSheet(true); }} accessibilityLabel="More filters">
-          <Glass radius={R.md} border={extraFilters ? C.accent : GLASS.borderHi} tint={extraFilters ? 'rgba(192,38,211,0.35)' : 'rgba(0,0,0,0.42)'} highlight={false} style={styles.filterBtn}>
+          <Glass radius={R.md} border={extraFilters ? C.accent : GLASS.borderHi} tint={extraFilters ? 'rgba(192,38,211,0.30)' : undefined} style={styles.filterBtn}>
             <View style={styles.center}>
               <IconFilter size={18} color={C.ink} />
               {extraFilters > 0 && <View style={styles.badge} />}
@@ -248,7 +249,7 @@ export function Search() {
           <Pressable style={[StyleSheet.absoluteFill, styles.scrim]} onPress={() => setSheet(false)} accessibilityLabel="Close" />
         </Animated.View>
         <Animated.View entering={SlideInDown.duration(300)} style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Glass radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
+          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             <View style={styles.grab} />
             <Text style={T.title}>Filters</Text>
             <Text style={styles.sheetLabel}>TYPE</Text>
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   segText: { color: C.muted, fontFamily: FONT[500], fontSize: 13 },
   segTextOn: { color: C.ink },
   row: { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 },
-  tile: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(192,38,211,0.18)', borderWidth: 1, borderColor: 'rgba(232,121,249,0.28)' },
+  tile: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: GLASS.border },
   rowShadow: { },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowName: { fontFamily: FONT[700], fontSize: 14.5, lineHeight: 21, color: C.ink, marginTop: 2 },

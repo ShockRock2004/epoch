@@ -1,8 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { C, FONT, GLASS, R, S } from '../theme';
-import { LinearGradient } from 'expo-linear-gradient';
-import { GRAD } from '../theme';
+import { Glass } from './Glass';
 import { IconChevron } from './Icons';
 import { haptic } from '../lib/haptics';
 
@@ -26,7 +25,7 @@ export function Pager({ page, pages, onChange }: { page: number; pages: number; 
     onChange(p);
   };
   return (
-    <LinearGradient colors={GRAD} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.wrap}>
+    <Glass radius={R.md} style={styles.wrap}>
       <View style={styles.row}>
         <Arrow dir="left" enabled={page > 0} onPress={() => go(page - 1)} />
         <View style={styles.nums}>
@@ -49,7 +48,7 @@ export function Pager({ page, pages, onChange }: { page: number; pages: number; 
         </View>
         <Arrow dir="right" enabled={page < pages - 1} onPress={() => go(page + 1)} />
       </View>
-    </LinearGradient>
+    </Glass>
   );
 }
 
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
   nums: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   num: { minWidth: 34, height: 34, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   numOn: { backgroundColor: C.light },
-  numText: { color: C.ink, fontFamily: FONT[600], fontSize: 13.5, fontVariant: ['tabular-nums'] },
+  numText: { color: C.ink2, fontFamily: FONT[500], fontSize: 13, fontVariant: ['tabular-nums'] },
   numTextOn: { color: C.onLight, fontFamily: FONT[800] },
   ellipsis: { color: C.ink2, fontFamily: FONT[500], width: 18, textAlign: 'center' },
   arrow: { width: 38, height: 38, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center' },

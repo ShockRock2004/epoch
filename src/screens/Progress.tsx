@@ -6,9 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BONUS, EPISODES, TOTAL } from '../data/plan';
 import { useStore, DEFAULT_START } from '../lib/store';
 import { activity, addDays, diffDays, episodesOn, hoursWatched, ringProgress, streaks, totalHours, PLAN_DAYS } from '../lib/schedule';
-import { C, FONT, GLASS, GRAD, R, S, T, fmtClock } from '../theme';
+import { C, FONT, GLASS, GRAD, R, RING_COLORS, S, T, fmtClock } from '../theme';
 import { Glass } from '../components/Glass';
-import { Dial, GradientBar } from '../components/Dial';
+import { Rings } from '../components/Rings';
 import { ActivityChart } from '../components/ActivityChart';
 import { BlackButton } from '../components/Buttons';
 import { useTabClearance } from '../components/TabBar';
@@ -58,47 +58,55 @@ export function Progress() {
           </Pressable>
         </View>
 
-        {/* Overall, as a thermostat dial */}
-        <View style={styles.dialWrap}>
-          <Text style={T.label}>OVERALL</Text>
-          <Dial frac={done / TOTAL} value={`${done}`} unit={`of ${TOTAL} episodes`} caption={`${Math.round((done / TOTAL) * 100)}% COMPLETE`} />
-        </View>
+        {/* Apple-Watch-style rings, one stack per half of the plan */}
+        {clusters.map((cl, ci) => (
+          <Glass key={cl.title} style={styles.card}>
+            <View style={styles.clusterHead}>
+              <Text style={styles.clusterTitle}>{cl.title.toUpperCase()}</Text>
+              <Text style={[T.meta, styles.num]}>{Math.round(cl.frac * 100)}%</Text>
+            </View>
+            <View style={[styles.rule, { marginBottom: S.lg }]} />
+            <View style={styles.ringRow}>
+              <View>
+                <Rings rings={cl.rings.map((r, i) => ({ frac: r.frac, color: RING_COLORS[ci][i] }))} size={150} stroke={13} gap={4} />
+                <View style={styles.ringCenter} pointerEvents="none">
+                  <Text style={styles.ringNum}>{cl.done}</Text>
+                  <Text style={[T.meta, { fontSize: 10.5 }]}>of {cl.total}</Text>
+                </View>
+              </View>
+              <View style={styles.legend}>
+                {cl.rings.map((r, i) => (
+                  <View key={r.key} style={styles.legendRow}>
+                    <View style={[styles.legendDot, { backgroundColor: RING_COLORS[ci][i] }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={T.label}>{r.name.toUpperCase()}</Text>
+                      <Text style={[styles.legendVal, { color: RING_COLORS[ci][i] }]}>{r.done}<Text style={styles.legendOf}>/{r.total}</Text></Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </Glass>
+        ))}
 
-        {/* Split card, like the reference's home | outside temperature */}
+        {/* Split card: hours | streak */}
         <Glass>
           <View style={styles.splitRow}>
             <View style={styles.splitCell}>
-              <Text style={T.label}>HOURS WATCHED</Text>
+              <Text style={T.label}>EPISODES</Text>
+              <Text style={styles.big}>{done}<Text style={styles.bigUnit}> / {TOTAL}</Text></Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.splitCell}>
+              <Text style={T.label}>HOURS</Text>
               <Text style={styles.big}>{hrs.toFixed(1)}<Text style={styles.bigUnit}> / {totalHours().toFixed(0)}</Text></Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.splitCell}>
-              <Text style={T.label}>DAY STREAK</Text>
-              <Text style={[styles.big, { color: C.accent }]}>{st.current}<Text style={styles.bigUnit}>  best {st.best}</Text></Text>
+              <Text style={T.label}>STREAK</Text>
+              <Text style={[styles.big, { color: C.accent }]}>{st.current}<Text style={styles.bigUnit}> best {st.best}</Text></Text>
             </View>
           </View>
-        </Glass>
-
-        {/* Phases, like the reference's rooms & devices sliders */}
-        <Glass style={styles.card}>
-          {clusters.map((cl, ci) => (
-            <View key={cl.title} style={ci > 0 ? { marginTop: S.xl } : undefined}>
-              <View style={styles.clusterHead}>
-                <Text style={styles.clusterTitle}>{cl.title.toUpperCase()}</Text>
-                <Text style={[T.meta, styles.num]}>{Math.round(cl.frac * 100)}%</Text>
-              </View>
-              <View style={styles.rule} />
-              {cl.rings.map(r => (
-                <View key={r.key} style={styles.slider}>
-                  <View style={styles.sliderHead}>
-                    <Text style={T.label}>{r.name.toUpperCase()}</Text>
-                    <Text style={[T.meta, styles.num, { color: C.ink2 }]}>{r.done}/{r.total}</Text>
-                  </View>
-                  <GradientBar frac={r.frac} />
-                </View>
-              ))}
-            </View>
-          ))}
         </Glass>
 
         <Glass style={styles.card}>
@@ -151,7 +159,7 @@ export function Progress() {
           <Pressable style={[StyleSheet.absoluteFill, styles.scrim]} onPress={() => setSettings(false)} accessibilityLabel="Close" />
         </Animated.View>
         <Animated.View entering={SlideInDown.duration(300)} style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Glass radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
+          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
             <View style={styles.grab} />
             <Text style={styles.clusterTitle}>SETTINGS</Text>
             <Text style={styles.sheetLabel}>DAY 1 IS</Text>
@@ -188,18 +196,23 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.xs },
   screenTitle: { fontFamily: FONT[800], fontSize: 22, letterSpacing: 1.2, color: C.ink },
   iconBtn: { width: 40, height: 40, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: GLASS.borderHi },
-  dialWrap: { alignItems: 'center', gap: S.sm, marginVertical: S.sm },
   splitRow: { flexDirection: 'row', paddingVertical: S.lg },
-  splitCell: { flex: 1, alignItems: 'center', gap: 6 },
+  splitCell: { flex: 1, alignItems: 'center', gap: 4 },
   divider: { width: 1, backgroundColor: GLASS.borderHi },
-  big: { fontFamily: FONT[600], fontSize: 30, color: C.ink, fontVariant: ['tabular-nums'] },
-  bigUnit: { fontFamily: FONT[500], fontSize: 12.5, color: C.muted },
+  big: { fontFamily: FONT[600], fontSize: 22, color: C.ink, fontVariant: ['tabular-nums'] },
+  bigUnit: { fontFamily: FONT[500], fontSize: 11, color: C.muted },
+  ringRow: { flexDirection: 'row', alignItems: 'center', gap: S.xl },
+  ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  ringNum: { fontFamily: FONT[700], fontSize: 22, color: C.ink, fontVariant: ['tabular-nums'] },
+  legend: { flex: 1, gap: S.md },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendVal: { fontFamily: FONT[700], fontSize: 15, fontVariant: ['tabular-nums'], marginTop: 1 },
+  legendOf: { fontFamily: FONT[500], fontSize: 11, color: C.muted },
   card: { padding: S.xl },
   clusterHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   clusterTitle: { fontFamily: FONT[800], fontSize: 12, letterSpacing: 1.6, color: C.ink },
   rule: { height: 1, backgroundColor: GLASS.borderHi, marginTop: S.sm },
-  slider: { marginTop: S.lg, gap: S.sm },
-  sliderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   num: { fontVariant: ['tabular-nums'] },
   key: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: S.md },
   keySw: { width: 9, height: 9, borderRadius: 2, marginLeft: 4 },
