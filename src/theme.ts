@@ -61,7 +61,7 @@ export const GLASS = {
  *
  * expo-blur on Android: native radius = intensity / reduction, and the native black overlay
  * alpha = 0.75 × intensity / 100 (systemChromeMaterialDark). Low intensity + low reduction gives
- * a strong blur without greying the glass. Below API 31 there is no blur, so `fallback` is opaque.
+ * a strong blur without greying the glass. Values were tuned on a 1080×2400 @ 420 dpi screen (Pixel 7a).
  */
 export type MaterialName = 'card' | 'chrome' | 'header' | 'sheet' | 'scrim' | 'dock';
 export type Material = {
@@ -69,18 +69,17 @@ export type Material = {
   intensity: number;
   reduction: number;
   tint: string;
-  fallback: string;
   border: string | null;
   specular: boolean;
   elevation: number;
 };
 export const MATERIAL: Record<MaterialName, Material> = {
-  card: { target: 'backdrop', intensity: 26, reduction: 3, tint: 'rgba(24,18,36,0.22)', fallback: 'rgba(24,18,36,0.9)', border: 'rgba(255,255,255,0.09)', specular: true, elevation: 6 },
-  chrome: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(14,11,20,0.30)', fallback: 'rgba(14,11,20,0.94)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 10 },
-  header: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(10,8,14,0.40)', fallback: 'rgba(10,8,14,0.95)', border: null, specular: false, elevation: 0 },
-  sheet: { target: 'content', intensity: 34, reduction: 3, tint: 'rgba(16,12,24,0.48)', fallback: 'rgba(16,12,24,0.97)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 16 },
-  scrim: { target: 'content', intensity: 22, reduction: 3.5, tint: 'rgba(0,0,0,0.30)', fallback: 'rgba(5,4,7,0.82)', border: null, specular: false, elevation: 0 },
-  dock: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(20,14,30,0.42)', fallback: 'rgba(20,14,30,0.95)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 10 },
+  card: { target: 'backdrop', intensity: 26, reduction: 3, tint: 'rgba(24,18,36,0.22)', border: 'rgba(255,255,255,0.09)', specular: true, elevation: 6 },
+  chrome: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(14,11,20,0.30)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 10 },
+  header: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(10,8,14,0.40)', border: null, specular: false, elevation: 0 },
+  sheet: { target: 'content', intensity: 34, reduction: 3, tint: 'rgba(16,12,24,0.48)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 16 },
+  scrim: { target: 'content', intensity: 22, reduction: 3.5, tint: 'rgba(0,0,0,0.30)', border: null, specular: false, elevation: 0 },
+  dock: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(20,14,30,0.42)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 10 },
 };
 
 export const R = { sm: 8, md: 10, card: 14, lg: 18, pill: 999 };

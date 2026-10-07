@@ -3,14 +3,14 @@
     "name": "Epoch",
     "slug": "epoch",
     "scheme": "epoch",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#050407",
     "android": {
       "package": "com.epoch.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#050407",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -42,6 +42,19 @@
             "./assets/fonts/Sora_700Bold.ttf",
             "./assets/fonts/Sora_800ExtraBold.ttf"
           ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": [
+              "arm64-v8a"
+            ],
+            "minSdkVersion": 33,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
         }
       ]
     ]

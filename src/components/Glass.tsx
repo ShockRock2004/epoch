@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { Platform, StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
+import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, GLASS, MATERIAL, MaterialName, R } from '../theme';
@@ -10,9 +10,6 @@ type Target = React.RefObject<View | null> | null;
 export const BackdropTargetContext = createContext<Target>(null);
 /** Background + scrolling content. Chrome, headers and sheets live outside it and blur it. */
 export const ContentTargetContext = createContext<Target>(null);
-
-/** Android below 12 has no RenderEffect; expo-blur would draw a faint see-through tint, so go opaque instead. */
-export const CAN_BLUR = Platform.OS !== 'android' || (typeof Platform.Version === 'number' && Platform.Version >= 31);
 
 type Props = {
   children?: React.ReactNode;
@@ -37,7 +34,8 @@ export function Glass({ children, style, material = 'card', radius = R.card, tin
   const backdrop = useContext(BackdropTargetContext);
   const content = useContext(ContentTargetContext);
   const target = m.target === 'backdrop' ? backdrop : content;
-  const blur = CAN_BLUR && !!target;
+  // Built for one phone (Pixel 7a, Android 13+, minSdk 33), so the RenderEffect blur is always there.
+  const blur = !!target;
   const line = border === undefined ? m.border : border;
 
   return (
@@ -56,7 +54,7 @@ export function Glass({ children, style, material = 'card', radius = R.card, tin
             style={StyleSheet.absoluteFill}
           />
         )}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: tint ?? (blur ? m.tint : m.fallback) }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: tint ?? m.tint }]} />
         {blur && <View style={[StyleSheet.absoluteFill, { backgroundColor: GLASS.scatter }]} />}
         {underlay}
         {m.specular && (
