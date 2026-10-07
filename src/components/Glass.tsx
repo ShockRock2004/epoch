@@ -1,50 +1,79 @@
 import React, { createContext, useContext } from 'react';
-import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
+import { Platform, StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GLASS, R } from '../theme';
+import { C, GLASS, MATERIAL, MaterialName, R } from '../theme';
 
-/** The environment's BlurTargetView, so any glass on screen can blur it. */
-export const BlurTargetContext = createContext<React.RefObject<View | null> | null>(null);
+type Target = React.RefObject<View | null> | null;
+
+/** The lit background only. Cards blur this: they scroll inside the content, so they can't blur it. */
+export const BackdropTargetContext = createContext<Target>(null);
+/** Background + scrolling content. Chrome, headers and sheets live outside it and blur it. */
+export const ContentTargetContext = createContext<Target>(null);
+
+/** Android below 12 has no RenderEffect; expo-blur would draw a faint see-through tint, so go opaque instead. */
+export const CAN_BLUR = Platform.OS !== 'android' || (typeof Platform.Version === 'number' && Platform.Version >= 31);
 
 type Props = {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  material?: MaterialName;
   radius?: number;
-  /** 'glass' blurs the environment; 'solid' is for modals, which are separate windows with nothing to blur. */
-  variant?: 'glass' | 'solid';
+  /** Overrides the material's tint (e.g. denser glass for a finished episode). */
   tint?: string;
-  border?: string;
-  highlight?: boolean;
+  /** Overrides the material's hairline. */
+  border?: string | null;
+  /** Rendered inside the clipped glass, under the children (e.g. a progress sweep). */
+  underlay?: React.ReactNode;
 };
 
-/** Frosted glass: expo-blur of the environment, a smoked tint, a top sheen and a white hairline. */
-export function Glass({ children, style, radius = R.card, variant = 'glass', tint, border = GLASS.border, highlight = true }: Props) {
-  const target = useContext(BlurTargetContext);
-  const blur = variant === 'glass' && target;
+/**
+ * Frosted glass, bottom to top:
+ * shadow plate (opaque, outside the clip, so Android never draws the shadow through the glass) →
+ * blur of the material's target → tint → white scatter → 1 px specular top edge → hairline → children.
+ */
+export function Glass({ children, style, material = 'card', radius = R.card, tint, border, underlay }: Props) {
+  const m = MATERIAL[material];
+  const backdrop = useContext(BackdropTargetContext);
+  const content = useContext(ContentTargetContext);
+  const target = m.target === 'backdrop' ? backdrop : content;
+  const blur = CAN_BLUR && !!target;
+  const line = border === undefined ? m.border : border;
+
   return (
-    <View style={[{ borderRadius: radius, overflow: 'hidden' }, style]}>
-      {blur && (
-        <BlurView
-          blurTarget={target}
-          intensity={GLASS.intensity}
-          tint="dark"
-          blurMethod="dimezisBlurViewSdk31Plus"
-          style={StyleSheet.absoluteFill}
-        />
+    <View style={[{ borderRadius: radius }, style]}>
+      {m.elevation > 0 && (
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, backgroundColor: C.bg, elevation: m.elevation }]} />
       )}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: tint ?? (variant === 'solid' ? GLASS.tintSolid : GLASS.tint) }]} />
-      {highlight && (
-        <LinearGradient
-          pointerEvents="none"
-          colors={[GLASS.highlight, 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 0.55 }}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 1, borderColor: border }]} />
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
+        {blur && (
+          <BlurView
+            blurTarget={target!}
+            intensity={m.intensity}
+            blurReductionFactor={m.reduction}
+            tint="systemChromeMaterialDark"
+            blurMethod="dimezisBlurViewSdk31Plus"
+            style={StyleSheet.absoluteFill}
+          />
+        )}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: tint ?? (blur ? m.tint : m.fallback) }]} />
+        {blur && <View style={[StyleSheet.absoluteFill, { backgroundColor: GLASS.scatter }]} />}
+        {underlay}
+        {m.specular && (
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', GLASS.specular, 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.specular}
+          />
+        )}
+        {line && <View style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 1, borderColor: line }]} />}
+      </View>
       {children}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  specular: { position: 'absolute', top: 0, left: 0, right: 0, height: 1 },
+});

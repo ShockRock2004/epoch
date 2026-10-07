@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle, StyleProp } from 'react-native';
-import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import React from 'react';
+import { Pressable, StyleSheet, Text, View, ViewStyle, StyleProp } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Episode, Seg } from '../data/plan';
 import { PHASES } from '../data/plan';
@@ -8,10 +8,10 @@ import { C, FONT, GLASS, PHASE_COLOR, R, S, T, fmtClock, fmtMins } from '../them
 import { Glass } from './Glass';
 import { BlackButton, GradientButton } from './Buttons';
 import { IconCheck } from './Icons';
+import { toast } from './Overlay';
 import { haptic } from '../lib/haptics';
 import { openSeg } from '../lib/youtube';
 
-const FLIP_MS = 480;
 const HOLD_MS = 650;
 const HOLD_DELAY = 180; // a quick tap never shows the fill
 
@@ -19,6 +19,7 @@ type Props = {
   ep: Episode;
   done: boolean;
   onToggle: (n: number) => void;
+  onOpen: () => void;
   minHeight?: number;
   style?: StyleProp<ViewStyle>;
 };
@@ -26,7 +27,14 @@ type Props = {
 export const pad2 = (n: number) => String(n).padStart(2, '0');
 export const segRange = (s: Seg) => (s.ranged ? `${fmtClock(s.start)}–${s.end === s.len ? 'end' : fmtClock(s.end)}` : fmtClock(s.len));
 
-/** A bullet list with small violet markers. Shared by the card back and the detail sheet. */
+/** Toggle an episode and offer to take it back. */
+export function toggleWithUndo(n: number, wasDone: boolean, onToggle: (n: number) => void) {
+  wasDone ? haptic.undo() : haptic.success();
+  onToggle(n);
+  toast.show(`Episode ${n} ${wasDone ? 'marked not done' : 'marked done'}`, { label: 'Undo', onPress: () => { haptic.undo(); onToggle(n); } });
+}
+
+/** A bullet list with small violet markers. */
 export function Bullets({ items, gap = S.sm }: { items: string[]; gap?: number }) {
   return (
     <View style={{ gap }}>
@@ -40,44 +48,44 @@ export function Bullets({ items, gap = S.sm }: { items: string[]; gap?: number }
   );
 }
 
-export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Props) {
-  const [flipped, setFlipped] = useState(false);
-  const flip = useSharedValue(0);
+/** The visible way to finish an episode: a ring that fills white. */
+export function CheckButton({ done, onPress, label }: { done: boolean; onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={styles.checkHit}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: done }}
+      accessibilityLabel={label}
+    >
+      {({ pressed }) => (
+        <View style={[styles.check, done && styles.checkOn, pressed && { transform: [{ scale: 0.9 }] }]}>
+          {done && <IconCheck size={15} color={C.onLight} strokeWidth={2.8} />}
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+export function EpisodeCard({ ep, done, onToggle, onOpen, minHeight = 168, style }: Props) {
   const hold = useSharedValue(0);
   const isReview = !!ep.review;
   const multi = ep.segs.length > 1;
+  const toggle = () => toggleWithUndo(ep.n, done, onToggle);
 
-  const doFlip = () => {
-    haptic.select();
-    setFlipped(f => !f);
-    flip.value = withTiming(flipped ? 0 : 1, { duration: FLIP_MS, easing: Easing.bezier(0.33, 0, 0.15, 1) });
-  };
-
-  // One rotation drives both faces; each hides past 90° so Android never shows a ghosted face.
-  const frontStyle = useAnimatedStyle(() => ({
-    opacity: flip.value < 0.5 ? 1 : 0,
-    transform: [{ perspective: 1400 }, { rotateY: `${interpolate(flip.value, [0, 1], [0, 180])}deg` }],
-  }));
-  const backStyle = useAnimatedStyle(() => ({
-    opacity: flip.value >= 0.5 ? 1 : 0,
-    transform: [{ perspective: 1400 }, { rotateY: `${interpolate(flip.value, [0, 1], [180, 360])}deg` }],
-  }));
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 - 0.012 * hold.value }] }));
   const fillStyle = useAnimatedStyle(() => ({ width: `${hold.value * 100}%`, opacity: hold.value > 0.001 ? 1 : 0 }));
 
+  // Holding is a shortcut for the check button, with a soft violet sweep while it fills.
   const onPressIn = () => {
     hold.value = withDelay(HOLD_DELAY, withTiming(1, { duration: HOLD_MS - HOLD_DELAY, easing: Easing.inOut(Easing.quad) }));
   };
   const onPressOut = () => { hold.value = withTiming(0, { duration: 200 }); };
-  const onLongPress = () => {
-    done ? haptic.undo() : haptic.success();
-    onToggle(ep.n);
-    hold.value = withTiming(0, { duration: 280 });
-  };
+  const onLongPress = () => { toggle(); hold.value = withTiming(0, { duration: 280 }); };
 
-  // Hold-to-complete: a soft violet sweep with a bright leading edge.
   const fill = (
-    <Animated.View pointerEvents="none" style={[styles.fill, fillStyle]}>
+    <Animated.View style={[styles.fill, fillStyle]}>
       <LinearGradient
         colors={done ? ['rgba(242,179,126,0)', 'rgba(242,179,126,0.18)'] : ['rgba(209,59,240,0.04)', 'rgba(142,45,226,0.38)']}
         start={{ x: 0, y: 0 }}
@@ -88,124 +96,97 @@ export function EpisodeCard({ ep, done, onToggle, minHeight = 176, style }: Prop
     </Animated.View>
   );
 
-  const label = (
-    <View style={styles.labelRow}>
-      <Text style={T.label}>EPISODE {pad2(ep.n)}</Text>
-      <View style={[styles.dot, { backgroundColor: PHASE_COLOR[ep.phase] }]} />
-      <Text style={T.label}>{PHASES[ep.phase].short.toUpperCase()}</Text>
-      <View style={{ flex: 1 }} />
-      {done && (
-        <View style={styles.status}>
-          <IconCheck size={13} color={C.accent} strokeWidth={2.4} />
-          <Text style={styles.statusText}>DONE</Text>
-        </View>
-      )}
-    </View>
-  );
-
-  const action = isReview || !done ? (
-    <GradientButton
-      label={isReview ? 'Questions' : 'Start'}
-      onPress={() => { haptic.nav(); isReview ? doFlip() : openSeg(ep.segs[0]); }}
-      a11y={isReview ? 'Show questions' : `Start ${ep.name} on YouTube`}
-    />
-  ) : (
+  const action = isReview ? (
+    <GradientButton label="Questions" onPress={() => { haptic.nav(); onOpen(); }} a11y="Show the review questions" />
+  ) : done ? (
     <BlackButton label="Rewatch" onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} a11y={`Rewatch ${ep.name} on YouTube`} />
+  ) : (
+    <GradientButton label="Start" onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} a11y={`Start ${ep.name} on YouTube`} />
   );
 
   return (
-    <Animated.View style={[styles.shadow, pressStyle, style]}>
+    <Animated.View style={[pressStyle, style]}>
       <Pressable
-        onPress={doFlip}
+        onPress={() => { haptic.nav(); onOpen(); }}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onLongPress={onLongPress}
         delayLongPress={HOLD_MS}
         accessibilityRole="button"
-        accessibilityLabel={`Episode ${ep.n}: ${ep.name}.${done ? ' Done.' : ''} Tap for the summary, hold to mark ${done ? 'not done' : 'done'}.`}
+        accessibilityLabel={`Episode ${ep.n}: ${ep.name}.${done ? ' Done.' : ''} Opens the details.`}
       >
-        {/* Front sets the card's height. */}
-        <Animated.View style={[styles.face, frontStyle]} pointerEvents={flipped ? 'none' : 'box-none'}>
-          <Glass style={{ minHeight }} border={done ? C.accentLine : GLASS.border}>
-            {fill}
-            <View style={styles.pad}>
-              {label}
-              <Text style={[T.title, styles.title]} numberOfLines={2}>{ep.name}</Text>
+        {/* Finished episodes recede into denser glass; the next one stays clear. */}
+        <Glass style={{ minHeight }} tint={done ? 'rgba(18,14,26,0.46)' : undefined} underlay={fill}>
+          <View style={[styles.pad, done && styles.dim]}>
+            <View style={styles.labelRow}>
+              <View style={[styles.dot, { backgroundColor: PHASE_COLOR[ep.phase] }]} />
+              <Text style={[T.tag, { flex: 1 }]} numberOfLines={1}>Episode {pad2(ep.n)} · {PHASES[ep.phase].short}</Text>
+            </View>
+            <Text style={[T.title, styles.title]} numberOfLines={2}>{ep.name}</Text>
 
-              {isReview && <Text style={[T.secondary, styles.sub]}>No video. {ep.review!.q.length} questions to answer out loud.</Text>}
-              {!isReview && !multi && (
-                <Pressable onPress={() => { haptic.nav(); openSeg(ep.segs[0]); }} style={styles.sub} accessibilityRole="link">
-                  <Text style={T.secondary} numberOfLines={2}>{ep.segs[0].title}</Text>
-                  <Text style={[T.meta, { marginTop: 2 }]}>{ep.segs[0].channel}</Text>
-                </Pressable>
-              )}
-              {multi && (
-                <View style={styles.list}>
-                  {ep.segs.map((s, i) => (
-                    <Pressable
-                      key={i}
-                      onPress={() => { haptic.nav(); openSeg(s); }}
-                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: 'rgba(199,125,255,0.12)' }]}
-                      accessibilityRole="link"
-                      accessibilityLabel={`Play video ${i + 1}: ${s.title}`}
-                    >
-                      <Text style={styles.itemNum}>{i + 1}.</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={T.secondary} numberOfLines={1}>{s.title}</Text>
-                        <Text style={[T.meta, styles.itemMeta]}>{s.channel} · {segRange(s)}</Text>
-                      </View>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-
-              <View style={{ flex: 1, minHeight: S.lg }} />
-              <View style={styles.footer}>
-                <Text style={T.meta}>
-                  {isReview ? '~20 min' : fmtMins(ep.secs)}{multi ? ` · ${ep.segs.length} videos` : ''}
-                </Text>
-                {action}
+            {isReview && <Text style={[T.secondary, styles.sub]}>No video. {ep.review!.q.length} questions to answer out loud.</Text>}
+            {!isReview && !multi && (
+              <View style={styles.sub}>
+                <Text style={T.secondary} numberOfLines={2}>{ep.segs[0].title}</Text>
+                <Text style={[T.meta, { marginTop: 2 }]}>{ep.segs[0].channel}</Text>
               </View>
-            </View>
-          </Glass>
-        </Animated.View>
+            )}
+            {multi && (
+              <View style={styles.list}>
+                {ep.segs.map((s, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => { haptic.nav(); openSeg(s); }}
+                    style={({ pressed }) => [styles.item, pressed && { backgroundColor: GLASS.fieldOn }]}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Play video ${i + 1}: ${s.title}`}
+                  >
+                    <Text style={styles.itemNum}>{i + 1}.</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={T.secondary} numberOfLines={1}>{s.title}</Text>
+                      <Text style={[T.meta, styles.itemMeta]}>{s.channel} · {segRange(s)}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
-        {/* Back overlays the front at the same size. */}
-        <Animated.View style={[StyleSheet.absoluteFill, styles.face, backStyle]} pointerEvents={flipped ? 'box-none' : 'none'}>
-          <Glass style={StyleSheet.absoluteFill} border={done ? C.accentLine : GLASS.border}>
-            {fill}
-            <View style={styles.pad}>
-              {label}
-              <ScrollView style={{ flex: 1, marginTop: S.md }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                <Bullets items={ep.points} />
-              </ScrollView>
-              <Text style={[T.meta, styles.hint]}>Tap to flip back · Hold to mark {done ? 'not done' : 'done'}</Text>
+            <View style={{ flex: 1, minHeight: S.lg }} />
+            <View style={styles.footer}>
+              <Text style={T.meta}>
+                {isReview ? '~20 min' : fmtMins(ep.secs)}{multi ? ` · ${ep.segs.length} videos` : ''}
+              </Text>
+              {action}
             </View>
-          </Glass>
-        </Animated.View>
+          </View>
+          {/* Outside the dimmed block so the control stays at full strength. */}
+          <View style={styles.checkSlot}>
+            <CheckButton done={done} onPress={toggle} label={done ? `Mark episode ${ep.n} not done` : `Mark episode ${ep.n} done`} />
+          </View>
+        </Glass>
       </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  shadow: { borderRadius: R.card, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
-  face: { backfaceVisibility: 'hidden' },
   pad: { flex: 1, padding: S.xl },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
-  dot: { width: 5, height: 5, borderRadius: 3 },
-  status: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statusText: { fontFamily: FONT[700], fontSize: 10, letterSpacing: 1.4, color: C.accent },
-  title: { marginTop: S.md },
+  dim: { opacity: 0.72 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm, paddingRight: 44 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  title: { marginTop: S.sm },
   sub: { marginTop: S.sm },
   list: { marginTop: S.md, gap: S.sm },
-  item: { flexDirection: 'row', alignItems: 'center', gap: S.sm, paddingVertical: S.sm + 1, paddingHorizontal: S.md, borderRadius: R.sm, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
+  item: { flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 48, paddingVertical: S.sm, paddingHorizontal: S.md, borderRadius: R.sm, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
   itemNum: { fontFamily: FONT[700], fontSize: 12.5, lineHeight: 19, color: C.label, width: 18 },
   itemMeta: { color: C.faint, fontVariant: ['tabular-nums'] },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bullet: { flexDirection: 'row', gap: S.md, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.pink, marginTop: 8 },
-  hint: { textAlign: 'center', marginTop: S.md, color: C.faint },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' },
   fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 2 },
+  checkSlot: { position: 'absolute', top: S.sm, right: S.sm },
+  checkHit: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  check: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.38)', alignItems: 'center', justifyContent: 'center' },
+  checkOn: { backgroundColor: C.light, borderColor: C.light },
 });

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { C, FONT, GLASS, R, S } from '../theme';
-import { Glass } from './Glass';
+import { C, FONT, R, S } from '../theme';
 import { IconChevron } from './Icons';
 import { haptic } from '../lib/haptics';
 
@@ -25,8 +24,7 @@ export function Pager({ page, pages, onChange }: { page: number; pages: number; 
     onChange(p);
   };
   return (
-    <Glass radius={R.md} style={styles.wrap}>
-      <View style={styles.row}>
+    <View style={styles.row}>
         <Arrow dir="left" enabled={page > 0} onPress={() => go(page - 1)} />
         <View style={styles.nums}>
           {pageWindow(page, pages).map((p, i) =>
@@ -47,8 +45,7 @@ export function Pager({ page, pages, onChange }: { page: number; pages: number; 
           )}
         </View>
         <Arrow dir="right" enabled={page < pages - 1} onPress={() => go(page + 1)} />
-      </View>
-    </Glass>
+    </View>
   );
 }
 
@@ -68,13 +65,12 @@ function Arrow({ dir, enabled, onPress }: { dir: 'left' | 'right'; enabled: bool
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: S.sm, borderRadius: R.md },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: S.sm },
   nums: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  num: { minWidth: 34, height: 34, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  num: { minWidth: 40, height: 40, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   numOn: { backgroundColor: C.light },
   numText: { color: C.ink2, fontFamily: FONT[500], fontSize: 13, fontVariant: ['tabular-nums'] },
   numTextOn: { color: C.onLight, fontFamily: FONT[800] },
   ellipsis: { color: C.ink2, fontFamily: FONT[500], width: 18, textAlign: 'center' },
-  arrow: { width: 38, height: 38, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center' },
+  arrow: { width: 44, height: 44, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center' },
 });

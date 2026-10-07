@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Glass } from './Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, FONT, GLASS, R, S } from '../theme';
+import { C, FONT, R, S } from '../theme';
 import { IconChart, IconHome, IconSearch } from './Icons';
 import { haptic } from '../lib/haptics';
 
@@ -15,7 +15,7 @@ const TABS: { key: Tab; label: string; Icon: typeof IconHome }[] = [
   { key: 'progress', label: 'Progress', Icon: IconChart },
 ];
 
-export const TAB_BAR_H = 60;
+export const TAB_BAR_H = 64;
 const PAD = 5;
 
 /** Space a scrolling screen leaves at the bottom so the floating bar never covers content. */
@@ -40,40 +40,37 @@ export function TabBar({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void
 
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, S.md) }]} pointerEvents="box-none">
-      <View style={styles.shadow}>
-        <Glass radius={R.lg} border={GLASS.borderHi} tint="rgba(18,15,26,0.72)" style={styles.bar}>
-          <View style={styles.row} onLayout={e => setW(e.nativeEvent.layout.width)}>
-            {slot > 0 && <Animated.View pointerEvents="none" style={[styles.indicator, { width: slot }, indicator]} />}
-            {TABS.map(({ key, label, Icon }) => {
-              const on = tab === key;
-              return (
-                <Pressable
-                  key={key}
-                  onPress={() => { if (!on) { haptic.nav(); onChange(key); } }}
-                  style={styles.btn}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={label}
-                >
-                  <Icon size={20} color={on ? C.onLight : C.ink2} strokeWidth={on ? 2.2 : 1.8} />
-                  <Text style={[styles.label, on && styles.labelOn]}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Glass>
-      </View>
+      <Glass material="chrome" radius={R.lg} style={styles.bar}>
+        <View style={styles.row} onLayout={e => setW(e.nativeEvent.layout.width)}>
+          {slot > 0 && <Animated.View pointerEvents="none" style={[styles.indicator, { width: slot }, indicator]} />}
+          {TABS.map(({ key, label, Icon }) => {
+            const on = tab === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => { if (!on) { haptic.nav(); onChange(key); } }}
+                style={styles.btn}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={label}
+              >
+                <Icon size={20} color={on ? C.onLight : C.ink2} strokeWidth={on ? 2.2 : 1.8} />
+                <Text style={[styles.label, on && styles.labelOn]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Glass>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: S.xl },
-  shadow: { borderRadius: R.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
   bar: { height: TAB_BAR_H, borderRadius: R.lg },
   row: { flex: 1, flexDirection: 'row', padding: PAD },
   indicator: { position: 'absolute', left: PAD, top: PAD, bottom: PAD, borderRadius: R.lg - PAD, backgroundColor: C.light },
   btn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  label: { color: C.ink2, fontSize: 10, fontFamily: FONT[500] },
+  label: { color: C.ink2, fontSize: 11, fontFamily: FONT[500] },
   labelOn: { color: C.onLight, fontFamily: FONT[700], opacity: 1 },
 });

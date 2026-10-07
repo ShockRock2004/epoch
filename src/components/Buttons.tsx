@@ -1,8 +1,7 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { C, FONT, GRAD, R, S } from '../theme';
-import { Glass } from './Glass';
+import { C, FONT, GLASS, GRAD, R, S } from '../theme';
 
 type BtnProps = { label: string; onPress: () => void; icon?: React.ReactNode; style?: StyleProp<ViewStyle>; height?: number; a11y?: string };
 
@@ -30,10 +29,10 @@ export function BlackButton({ label, onPress, icon, style, height = 42, a11y }: 
   );
 }
 
-/** A glass strip whose active cell is a white square. */
-export function GradientSegment<K extends string>({ items, value, onChange }: { items: [K, string][]; value: K; onChange: (k: K) => void }) {
+/** A flat strip (it sits on glass, it isn't glass) whose active cell is a white square. */
+export function Segment<K extends string>({ items, value, onChange }: { items: [K, string][]; value: K; onChange: (k: K) => void }) {
   return (
-    <Glass radius={R.md} style={styles.seg}>
+    <View style={styles.seg}>
       <View style={styles.segRow}>
         {items.map(([k, l]) => {
           const on = k === value;
@@ -44,16 +43,16 @@ export function GradientSegment<K extends string>({ items, value, onChange }: { 
           );
         })}
       </View>
-    </Glass>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm, paddingHorizontal: S.xl, borderRadius: R.md },
   gradText: { color: C.ink, fontFamily: FONT[700], fontSize: 13.5 },
-  black: { backgroundColor: C.black, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  black: { backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
   blackText: { color: C.ink, fontFamily: FONT[600], fontSize: 11.5, letterSpacing: 1.8 },
-  seg: { height: 46 },
+  seg: { minHeight: 44, borderRadius: R.md, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
   segRow: { flex: 1, flexDirection: 'row', padding: 4 },
   segCell: { flex: 1, borderRadius: R.sm, alignItems: 'center', justifyContent: 'center' },
   segOn: { backgroundColor: C.light },

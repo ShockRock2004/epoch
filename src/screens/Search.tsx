@@ -1,15 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODES, Episode, PHASES, Phase } from '../data/plan';
 import { TOPIC_LABEL, TopicGlyph } from '../components/illustrations';
 import { useStore } from '../lib/store';
 import { C, FONT, GLASS, PHASE_COLOR, R, S, T } from '../theme';
 import { Glass } from '../components/Glass';
-import { BlackButton, GradientButton, GradientSegment } from '../components/Buttons';
+import { BlackButton, GradientButton, Segment } from '../components/Buttons';
 import { Pager } from '../components/Pager';
 import { EpisodeSheet } from '../components/EpisodeSheet';
+import { Portal, Sheet } from '../components/Overlay';
+import { useBackdropScroll } from '../components/Backdrop';
+import { pad2 } from '../components/EpisodeCard';
 import { useTabClearance } from '../components/TabBar';
 import { IconCheck, IconFilter, IconSearch, IconX } from '../components/Icons';
 import { haptic } from '../lib/haptics';
@@ -53,22 +56,17 @@ function Highlight({ text, q, style, lines }: { text: string; q: string; style: 
   );
 }
 
-function Chip({ label, on, onPress, dot, solid }: { label: string; on: boolean; onPress: () => void; dot?: string; solid?: boolean }) {
+/** A flat control that sits on glass. Selected = the white square, the app's one selection signature. */
+function Chip({ label, on, onPress, dot }: { label: string; on: boolean; onPress: () => void; dot?: string }) {
   return (
-    <Pressable onPress={() => { haptic.select(); onPress(); }} accessibilityRole="button" accessibilityState={{ selected: on }}>
-      <Glass
-        radius={R.sm}
-        variant={solid ? 'solid' : 'glass'}
-        tint={on ? C.light : solid ? 'rgba(255,255,255,0.06)' : undefined}
-        border={on ? C.light : GLASS.border}
-        highlight={!on && !solid}
-        style={styles.chip}
-      >
-        <View style={styles.chipRow}>
-          {dot && <View style={[styles.dot, { backgroundColor: dot }]} />}
-          <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
-        </View>
-      </Glass>
+    <Pressable
+      onPress={() => { haptic.select(); onPress(); }}
+      style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && !on && { backgroundColor: GLASS.fieldOn }]}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+    >
+      {dot && <View style={[styles.dot, { backgroundColor: dot }]} />}
+      <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
 }
@@ -77,8 +75,11 @@ export function Search() {
   const { p, today, toggle } = useStore();
   const insets = useSafeAreaInsets();
   const clearance = useTabClearance();
-  const list = useRef<FlatList<Episode>>(null);
+  const onScroll = useBackdropScroll();
+  const list = useRef<Animated.ScrollView>(null);
+  const [headerH, setHeaderH] = useState(insets.top + 190);
   const [q, setQ] = useState('');
+  const [focused, setFocused] = useState(false);
   const [phase, setPhase] = useState<Phase | 0>(0);
   const [status, setStatus] = useState<Status>('all');
   const [kind, setKind] = useState<Kind>('all');
@@ -122,117 +123,125 @@ export function Search() {
 
   const goPage = (n: number) => {
     setPage(n);
-    list.current?.scrollToOffset({ offset: 0, animated: true });
+    list.current?.scrollTo({ y: 0, animated: true });
   };
 
   const clear = () => { setQ(''); setPhase(0); setStatus('all'); setKind('all'); setLen('all'); setSort('plan'); };
 
-  const header = (
-    <View style={{ paddingTop: insets.top + S.xl, gap: S.md }}>
-      <View>
-        <Text style={styles.screenTitle}>SEARCH</Text>
-        <Text style={[T.label, { color: C.muted }]}>{results.length} OF {EPISODES.length} EPISODES</Text>
-      </View>
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Sticky frosted header: it floats above the content layer, so results frost as they scroll under it. */}
+      <Portal layer="chrome">
+        <Glass material="header" radius={0} style={styles.header}>
+          <View style={[styles.headerIn, { paddingTop: insets.top + S.md }]} onLayout={e => setHeaderH(e.nativeEvent.layout.height)}>
+            <View style={styles.searchRow}>
+              <View style={[styles.input, focused && styles.inputFocused]}>
+                <IconSearch size={17} color={C.ink2} />
+                <TextInput
+                  value={q}
+                  onChangeText={setQ}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
+                  placeholder="Episodes, topics, channels"
+                  placeholderTextColor={C.muted}
+                  style={styles.inputText}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  selectionColor={C.accent}
+                />
+                {!!q && (
+                  <Pressable onPress={() => setQ('')} hitSlop={8} style={styles.clearX} accessibilityLabel="Clear search"><IconX size={15} color={C.ink2} /></Pressable>
+                )}
+              </View>
+              <Pressable
+                onPress={() => { haptic.nav(); setSheet(true); }}
+                style={({ pressed }) => [styles.filterBtn, extraFilters > 0 && styles.filterOn, pressed && { backgroundColor: GLASS.fieldOn }]}
+                accessibilityRole="button"
+                accessibilityLabel={extraFilters ? `More filters, ${extraFilters} on` : 'More filters'}
+              >
+                <IconFilter size={18} color={C.ink} />
+                {extraFilters > 0 && <View style={styles.badge} />}
+              </Pressable>
+            </View>
 
-      <View style={styles.searchRow}>
-        <Glass radius={R.md} border={GLASS.borderHi} style={styles.input}>
-          <View style={styles.inputRow}>
-            <IconSearch size={17} color={C.ink2} />
-            <TextInput
-              value={q}
-              onChangeText={setQ}
-              placeholder="Episodes, topics, channels"
-              placeholderTextColor={C.muted}
-              style={styles.inputText}
-              returnKeyType="search"
-              autoCorrect={false}
-              selectionColor={C.accent}
-            />
-            {!!q && (
-              <Pressable onPress={() => setQ('')} hitSlop={10} accessibilityLabel="Clear search"><IconX size={15} color={C.ink2} /></Pressable>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
+              <Chip label="All phases" on={phase === 0} onPress={() => setPhase(0)} />
+              {([1, 2, 3, 4, 5] as Phase[]).map(ph => (
+                <Chip key={ph} label={PHASES[ph].short} on={phase === ph} onPress={() => setPhase(phase === ph ? 0 : ph)} dot={PHASE_COLOR[ph]} />
+              ))}
+            </ScrollView>
+
+            <Segment items={STATUS} value={status} onChange={k => { haptic.select(); setStatus(k); }} />
+          </View>
+          <View style={styles.headerLine} />
+        </Glass>
+      </Portal>
+
+      <Animated.ScrollView
+        ref={list}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingTop: headerH + S.lg, paddingHorizontal: S.lg, paddingBottom: clearance }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[T.meta, styles.count]}>
+          {results.length === EPISODES.length ? `${EPISODES.length} episodes` : `${results.length} of ${EPISODES.length} episodes`}
+          {results.length > PAGE ? ` · showing ${page * PAGE + 1}–${Math.min(results.length, (page + 1) * PAGE)}` : ''}
+        </Text>
+
+        {/* One glass panel for the whole page of results: one blur instead of ten. */}
+        <Glass>
+          <View style={styles.panel}>
+            {pageItems.length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={[T.title, { fontSize: 16 }]}>Nothing matches</Text>
+                <Text style={T.meta}>Try a different word, or loosen the filters.</Text>
+                {anyFilter && (
+                  <Pressable onPress={clear} style={({ pressed }) => [styles.clearBtn, pressed && { backgroundColor: GLASS.fieldOn }]} accessibilityRole="button">
+                    <Text style={styles.clearText}>Clear filters</Text>
+                  </Pressable>
+                )}
+              </View>
+            ) : pageItems.map((e, index) => {
+              const done = !!p.done[e.n];
+              const channels = e.segs.map(s => s.channel).filter((c, i, a) => a.indexOf(c) === i).join(' · ');
+              return (
+                <Animated.View key={e.n} entering={FadeIn.duration(200).delay(index * 20)}>
+                  {index > 0 && <View style={styles.divider} />}
+                  <Pressable
+                    onPress={() => { haptic.nav(); setSnapshot(results); setOpen(page * PAGE + index); }}
+                    style={({ pressed }) => [styles.row, pressed && { backgroundColor: GLASS.fieldOn }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Episode ${e.n}: ${e.name}${done ? ', done' : ''}`}
+                  >
+                    <View style={[styles.tile, done && styles.tileDone]}>
+                      {done ? <IconCheck size={18} color={C.onLight} strokeWidth={2.6} /> : <TopicGlyph topic={e.topic} size={20} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.rowTop}>
+                        <View style={[styles.dot, { backgroundColor: PHASE_COLOR[e.phase] }]} />
+                        <Text style={[T.tag, { flexShrink: 1 }]} numberOfLines={1}>Ep {pad2(e.n)} · {TOPIC_LABEL[e.topic]}</Text>
+                        {todays.includes(e.n) && <Text style={styles.today}>Today</Text>}
+                      </View>
+                      <Highlight text={e.name} q={query} style={[styles.rowName, done && { color: C.ink2 }]} lines={1} />
+                      <Highlight text={e.review ? 'Review · no video' : channels} q={query} style={[T.meta, { marginTop: 1 }]} lines={1} />
+                    </View>
+                    <Text style={[T.meta, { color: C.ink2 }]}>{e.review ? '20m' : `${Math.round(e.secs / 60)}m`}</Text>
+                  </Pressable>
+                </Animated.View>
+              );
+            })}
+            {pages > 1 && (
+              <>
+                <View style={styles.divider} />
+                <Pager page={page} pages={pages} onChange={goPage} />
+              </>
             )}
           </View>
         </Glass>
-        <Pressable onPress={() => { haptic.nav(); setSheet(true); }} accessibilityLabel="More filters">
-          <Glass radius={R.md} border={extraFilters ? C.accent : GLASS.borderHi} tint={extraFilters ? 'rgba(192,38,211,0.30)' : undefined} style={styles.filterBtn}>
-            <View style={styles.center}>
-              <IconFilter size={18} color={C.ink} />
-              {extraFilters > 0 && <View style={styles.badge} />}
-            </View>
-          </Glass>
-        </Pressable>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip label="All phases" on={phase === 0} onPress={() => setPhase(0)} />
-        {([1, 2, 3, 4, 5] as Phase[]).map(ph => (
-          <Chip key={ph} label={PHASES[ph].short} on={phase === ph} onPress={() => setPhase(phase === ph ? 0 : ph)} dot={PHASE_COLOR[ph]} />
-        ))}
-      </ScrollView>
-
-      <GradientSegment items={STATUS} value={status} onChange={k => { haptic.select(); setStatus(k); }} />
-
-      {results.length > PAGE && (
-        <Text style={[T.meta, { marginTop: S.xs }]}>
-          Showing {page * PAGE + 1}–{Math.min(results.length, (page + 1) * PAGE)} of {results.length}
-        </Text>
-      )}
-    </View>
-  );
-
-  return (
-    <View style={{ flex: 1 }}>
-      <FlatList
-        ref={list}
-        data={pageItems}
-        keyExtractor={e => String(e.n)}
-        ListHeaderComponent={header}
-        ListHeaderComponentStyle={{ marginBottom: S.md }}
-        contentContainerStyle={{ paddingHorizontal: S.lg, paddingBottom: clearance, gap: S.sm }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        renderItem={({ item: e, index }) => {
-          const done = !!p.done[e.n];
-          const channels = e.segs.map(s => s.channel).filter((c, i, a) => a.indexOf(c) === i).join(' · ');
-          return (
-            <Animated.View entering={FadeIn.duration(220).delay(index * 25)}>
-              <Pressable onPress={() => { haptic.nav(); setSnapshot(results); setOpen(page * PAGE + index); }} accessibilityRole="button" accessibilityLabel={`Episode ${e.n}: ${e.name}${done ? ', done' : ''}`}>
-                {({ pressed }) => (
-                  <Glass radius={R.card} border={done ? C.accentLine : GLASS.border} style={[styles.rowShadow, pressed && { transform: [{ scale: 0.985 }] }]}>
-                    <View style={styles.row}>
-                      <View style={styles.tile}><TopicGlyph topic={e.topic} size={20} /></View>
-                      <View style={{ flex: 1 }}>
-                        <View style={styles.rowTop}>
-                          <Text style={T.label}>EP {String(e.n).padStart(2, '0')}</Text>
-                          <View style={[styles.dot, { backgroundColor: PHASE_COLOR[e.phase] }]} />
-                          <Text style={T.label} numberOfLines={1}>{TOPIC_LABEL[e.topic].toUpperCase()}</Text>
-                          {todays.includes(e.n) && <Text style={styles.today}>Today</Text>}
-                        </View>
-                        <Highlight text={e.name} q={query} style={styles.rowName} lines={1} />
-                        <Highlight text={e.review ? 'Review · no video' : channels} q={query} style={[T.meta, { marginTop: 1 }]} lines={1} />
-                      </View>
-                      <View style={styles.rowEnd}>
-                        {done && <IconCheck size={15} color={C.accent} strokeWidth={2.4} />}
-                        <Text style={[T.meta, { color: C.ink2 }]}>{e.review ? '20m' : `${Math.round(e.secs / 60)}m`}</Text>
-                      </View>
-                    </View>
-                  </Glass>
-                )}
-              </Pressable>
-            </Animated.View>
-          );
-        }}
-        ListFooterComponent={<Pager page={page} pages={pages} onChange={goPage} />}
-        ListEmptyComponent={
-          <Glass style={styles.empty}>
-            <Text style={[T.title, { fontSize: 16 }]}>Nothing matches</Text>
-            <Text style={T.meta}>Try a different word, or loosen the filters.</Text>
-            {anyFilter && (
-              <Pressable onPress={clear} style={styles.clearBtn}><Text style={styles.clearText}>CLEAR FILTERS</Text></Pressable>
-            )}
-          </Glass>
-        }
-      />
+      </Animated.ScrollView>
 
       <EpisodeSheet
         list={snapshot}
@@ -244,82 +253,69 @@ export function Search() {
       />
 
       {/* More filters */}
-      <Modal visible={sheet} transparent animationType="none" onRequestClose={() => setSheet(false)} statusBarTranslucent navigationBarTranslucent>
-        <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
-          <Pressable style={[StyleSheet.absoluteFill, styles.scrim]} onPress={() => setSheet(false)} accessibilityLabel="Close" />
-        </Animated.View>
-        <Animated.View entering={SlideInDown.duration(300)} style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
-            <View style={styles.grab} />
-            <Text style={T.title}>Filters</Text>
-            <Text style={styles.sheetLabel}>TYPE</Text>
-            <View style={styles.wrapRow}>
-              {([['all', 'Everything'], ['video', 'Videos'], ['review', 'Reviews']] as [Kind, string][]).map(([k, l]) => (
-                <Chip key={k} label={l} on={kind === k} onPress={() => setKind(k)} solid />
-              ))}
-            </View>
-            <Text style={styles.sheetLabel}>LENGTH</Text>
-            <View style={styles.wrapRow}>
-              {LENS.map(l => <Chip key={l.key} label={l.label} on={len === l.key} onPress={() => setLen(l.key)} solid />)}
-            </View>
-            <Text style={styles.sheetLabel}>SORT</Text>
-            <View style={styles.wrapRow}>
-              {([['plan', 'Plan order'], ['short', 'Shortest first'], ['long', 'Longest first']] as [Sort, string][]).map(([k, l]) => (
-                <Chip key={k} label={l} on={sort === k} onPress={() => setSort(k)} solid />
-              ))}
-            </View>
-            <View style={styles.sheetActions}>
-              <BlackButton label="Reset" height={48} onPress={() => { haptic.undo(); setKind('all'); setLen('all'); setSort('plan'); }} />
-              <GradientButton label={`Show ${results.length} episodes`} height={48} style={{ flex: 1 }} onPress={() => setSheet(false)} />
-            </View>
-          </Glass>
-        </Animated.View>
-      </Modal>
+      <Sheet visible={sheet} onClose={() => setSheet(false)} style={styles.sheet}>
+        <View style={styles.grab} />
+        <Text style={T.title}>Filters</Text>
+        <Text style={styles.sheetLabel}>TYPE</Text>
+        <View style={styles.wrapRow}>
+          {([['all', 'Everything'], ['video', 'Videos'], ['review', 'Reviews']] as [Kind, string][]).map(([k, l]) => (
+            <Chip key={k} label={l} on={kind === k} onPress={() => setKind(k)} />
+          ))}
+        </View>
+        <Text style={styles.sheetLabel}>LENGTH</Text>
+        <View style={styles.wrapRow}>
+          {LENS.map(l => <Chip key={l.key} label={l.label} on={len === l.key} onPress={() => setLen(l.key)} />)}
+        </View>
+        <Text style={styles.sheetLabel}>SORT</Text>
+        <View style={styles.wrapRow}>
+          {([['plan', 'Plan order'], ['short', 'Shortest first'], ['long', 'Longest first']] as [Sort, string][]).map(([k, l]) => (
+            <Chip key={k} label={l} on={sort === k} onPress={() => setSort(k)} />
+          ))}
+        </View>
+        <View style={styles.sheetActions}>
+          <BlackButton label="Reset" height={48} onPress={() => { haptic.undo(); setKind('all'); setLen('all'); setSort('plan'); }} />
+          <GradientButton label={`Show ${results.length} episodes`} height={48} style={{ flex: 1 }} onPress={() => setSheet(false)} />
+        </View>
+      </Sheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screenTitle: { fontFamily: FONT[800], fontSize: 22, letterSpacing: 1.2, color: C.ink },
+  header: { position: 'absolute', top: 0, left: 0, right: 0 },
+  headerIn: { paddingHorizontal: S.lg, paddingBottom: S.md, gap: S.sm + 2 },
+  headerLine: { height: 1, backgroundColor: GLASS.divider },
   searchRow: { flexDirection: 'row', gap: S.sm },
-  input: { flex: 1, height: 48 },
-  inputRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, paddingHorizontal: S.md + 2 },
+  input: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 48, paddingLeft: S.md + 2, borderRadius: R.md, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
+  inputFocused: { borderColor: 'rgba(199,125,255,0.6)', backgroundColor: 'rgba(255,255,255,0.07)' },
   inputText: { flex: 1, color: C.ink, fontFamily: FONT[400], fontSize: 14.5, paddingVertical: 0 },
-  filterBtn: { width: 48, height: 48 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  clearX: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  filterBtn: { width: 48, minHeight: 48, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
+  filterOn: { borderColor: C.accent, backgroundColor: 'rgba(192,38,211,0.24)' },
   badge: { position: 'absolute', top: 11, right: 11, width: 6, height: 6, borderRadius: 3, backgroundColor: C.accent },
-  chips: { gap: S.sm, paddingRight: S.lg },
-  chip: { height: 34 },
-  chipRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: S.md + 2 },
-  chipText: { color: C.ink2, fontFamily: FONT[600], fontSize: 12.5 },
+  chipScroll: { marginHorizontal: -S.lg },
+  chips: { gap: S.sm, paddingHorizontal: S.lg },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: S.md + 2, borderRadius: R.sm, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
+  chipOn: { backgroundColor: C.light, borderColor: C.light },
+  chipText: { color: C.ink2, fontFamily: FONT[600], fontSize: 13 },
   chipTextOn: { color: C.onLight, fontFamily: FONT[700] },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  segment: { height: 42 },
-  segRow: { flex: 1, flexDirection: 'row', padding: 4 },
-  segBtn: { flex: 1, borderRadius: R.sm - 2, alignItems: 'center', justifyContent: 'center' },
-  segOn: { backgroundColor: GLASS.activeFill, borderWidth: 1, borderColor: GLASS.borderHi },
-  segText: { color: C.muted, fontFamily: FONT[500], fontSize: 13 },
-  segTextOn: { color: C.ink },
-  row: { flexDirection: 'row', alignItems: 'center', gap: S.md, paddingVertical: S.md + 2, paddingHorizontal: S.md + 2 },
-  tile: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: GLASS.border },
-  rowShadow: { },
+  count: { marginBottom: S.sm, marginLeft: S.xs },
+  panel: { borderRadius: R.card, overflow: 'hidden' },
+  divider: { height: 1, backgroundColor: GLASS.divider, marginHorizontal: S.md + 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: S.md, minHeight: 72, paddingVertical: S.md, paddingHorizontal: S.md + 2 },
+  tile: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.border },
+  tileDone: { backgroundColor: C.light, borderColor: C.light },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowName: { fontFamily: FONT[700], fontSize: 14.5, lineHeight: 21, color: C.ink, marginTop: 2 },
-  rowEnd: { alignItems: 'flex-end', justifyContent: 'center', gap: 4, minWidth: 28 },
-  today: { fontFamily: FONT[600], fontSize: 10.5, color: C.accent, marginLeft: 4 },
+  today: { fontFamily: FONT[600], fontSize: 11, color: C.accent, marginLeft: 4 },
   hit: { color: C.ink, backgroundColor: 'rgba(192,38,211,0.55)' },
   empty: { alignItems: 'center', paddingVertical: S.xxxl, gap: S.sm },
-  clearBtn: { marginTop: S.md, paddingHorizontal: S.lg, height: 40, borderRadius: R.md, backgroundColor: C.black, borderWidth: 1, borderColor: GLASS.borderHi, justifyContent: 'center' },
-  clearText: { color: C.ink, fontFamily: FONT[700], fontSize: 11.5, letterSpacing: 1.6 },
-  scrim: { backgroundColor: 'rgba(7,4,12,0.78)' },
-  sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: S.md },
+  clearBtn: { marginTop: S.md, paddingHorizontal: S.lg, minHeight: 44, borderRadius: R.md, backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi, justifyContent: 'center' },
+  clearText: { color: C.ink, fontFamily: FONT[600], fontSize: 13.5 },
   sheet: { padding: S.xl, paddingTop: S.md },
   grab: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: GLASS.borderHi, marginBottom: S.lg },
   sheetLabel: { ...T.label, marginTop: S.xl, marginBottom: S.sm },
   wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm },
   sheetActions: { flexDirection: 'row', gap: S.sm, marginTop: S.xxl },
-  btn: { flex: 1, height: 48, borderRadius: R.md, backgroundColor: C.light, alignItems: 'center', justifyContent: 'center' },
-  btnText: { color: C.onLight, fontFamily: FONT[600], fontSize: 14.5 },
-  btnGlass: { height: 48, paddingHorizontal: S.xl, borderRadius: R.md, borderWidth: 1, borderColor: GLASS.borderHi, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center' },
-  btnGlassText: { color: C.ink, fontFamily: FONT[500], fontSize: 14.5 },
 });

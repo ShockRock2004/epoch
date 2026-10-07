@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BONUS, EPISODES, TOTAL } from '../data/plan';
@@ -12,6 +12,8 @@ import { Rings } from '../components/Rings';
 import { ActivityChart } from '../components/ActivityChart';
 import { BlackButton } from '../components/Buttons';
 import { useTabClearance } from '../components/TabBar';
+import { Sheet } from '../components/Overlay';
+import { useBackdropScroll } from '../components/Backdrop';
 import { IconCheck, IconChevron, IconGear, IconPlay } from '../components/Icons';
 import { openSeg } from '../lib/youtube';
 import { haptic } from '../lib/haptics';
@@ -29,6 +31,7 @@ export function Progress() {
   const [sel, setSel] = useState<number | null>(null);
   const [settings, setSettings] = useState(false);
   const [armed, setArmed] = useState(false);
+  const onScroll = useBackdropScroll();
 
   const clusters = ringProgress(p);
   const counts = activity(p);
@@ -44,7 +47,9 @@ export function Progress() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{ paddingTop: insets.top + S.xl, paddingHorizontal: S.lg, paddingBottom: clearance, gap: S.md }}
         showsVerticalScrollIndicator={false}
       >
@@ -71,7 +76,7 @@ export function Progress() {
                 <Rings rings={cl.rings.map((r, i) => ({ frac: r.frac, color: RING_COLORS[ci][i] }))} size={150} stroke={13} gap={4} />
                 <View style={styles.ringCenter} pointerEvents="none">
                   <Text style={styles.ringNum}>{cl.done}</Text>
-                  <Text style={[T.meta, { fontSize: 10.5 }]}>of {cl.total}</Text>
+                  <Text style={[T.meta, { fontSize: 11 }]}>of {cl.total}</Text>
                 </View>
               </View>
               <View style={styles.legend}>
@@ -152,42 +157,35 @@ export function Progress() {
             )}
           </Pressable>
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
 
-      <Modal visible={settings} transparent animationType="none" onRequestClose={() => setSettings(false)} statusBarTranslucent navigationBarTranslucent>
-        <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
-          <Pressable style={[StyleSheet.absoluteFill, styles.scrim]} onPress={() => setSettings(false)} accessibilityLabel="Close" />
-        </Animated.View>
-        <Animated.View entering={SlideInDown.duration(300)} style={[styles.sheetWrap, { paddingBottom: insets.bottom + S.lg }]} pointerEvents="box-none">
-          <Glass variant="solid" radius={R.lg} border={GLASS.borderHi} style={styles.sheet}>
-            <View style={styles.grab} />
-            <Text style={styles.clusterTitle}>SETTINGS</Text>
-            <Text style={styles.sheetLabel}>DAY 1 IS</Text>
-            <View style={styles.stepper}>
-              <Pressable onPress={() => { haptic.select(); setStart(addDays(p.start, -1)); }} style={styles.stepBtn} accessibilityLabel="One day earlier">
-                <IconChevron dir="left" size={17} color={C.ink} />
-              </Pressable>
-              <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[700] }]}>{shortDate(p.start)} {p.start.slice(0, 4)}</Text>
-              <Pressable onPress={() => { haptic.select(); setStart(addDays(p.start, 1)); }} style={styles.stepBtn} accessibilityLabel="One day later">
-                <IconChevron size={17} color={C.ink} />
-              </Pressable>
-            </View>
-            <View style={{ flexDirection: 'row', gap: S.sm, marginTop: S.sm }}>
-              <Pressable onPress={() => { haptic.select(); setStart(today); }} style={styles.smallBtn}><Text style={styles.smallBtnText}>Start today</Text></Pressable>
-              <Pressable onPress={() => { haptic.select(); setStart(DEFAULT_START); }} style={styles.smallBtn}><Text style={styles.smallBtnText}>7 Oct 2026</Text></Pressable>
-            </View>
-            <Text style={styles.sheetLabel}>RESET</Text>
-            <BlackButton
-              label={armed ? 'Tap again to erase everything' : 'Reset progress'}
-              height={46}
-              onPress={() => {
-                if (!armed) { haptic.warn(); setArmed(true); return; }
-                haptic.undo(); reset(); setArmed(false); setSettings(false);
-              }}
-            />
-          </Glass>
-        </Animated.View>
-      </Modal>
+      <Sheet visible={settings} onClose={() => setSettings(false)} style={styles.sheet}>
+        <View style={styles.grab} />
+        <Text style={styles.clusterTitle}>SETTINGS</Text>
+        <Text style={styles.sheetLabel}>DAY 1 IS</Text>
+        <View style={styles.stepper}>
+          <Pressable onPress={() => { haptic.select(); setStart(addDays(p.start, -1)); }} style={styles.stepBtn} accessibilityLabel="One day earlier">
+            <IconChevron dir="left" size={17} color={C.ink} />
+          </Pressable>
+          <Text style={[T.secondary, { color: C.ink, fontFamily: FONT[700] }]}>{shortDate(p.start)} {p.start.slice(0, 4)}</Text>
+          <Pressable onPress={() => { haptic.select(); setStart(addDays(p.start, 1)); }} style={styles.stepBtn} accessibilityLabel="One day later">
+            <IconChevron size={17} color={C.ink} />
+          </Pressable>
+        </View>
+        <View style={{ flexDirection: 'row', gap: S.sm, marginTop: S.sm }}>
+          <Pressable onPress={() => { haptic.select(); setStart(today); }} style={styles.smallBtn}><Text style={styles.smallBtnText}>Start today</Text></Pressable>
+          <Pressable onPress={() => { haptic.select(); setStart(DEFAULT_START); }} style={styles.smallBtn}><Text style={styles.smallBtnText}>7 Oct 2026</Text></Pressable>
+        </View>
+        <Text style={styles.sheetLabel}>RESET</Text>
+        <BlackButton
+          label={armed ? 'Tap again to erase everything' : 'Reset progress'}
+          height={46}
+          onPress={() => {
+            if (!armed) { haptic.warn(); setArmed(true); return; }
+            haptic.undo(); reset(); setArmed(false); setSettings(false);
+          }}
+        />
+      </Sheet>
     </View>
   );
 }
@@ -195,7 +193,7 @@ export function Progress() {
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.xs },
   screenTitle: { fontFamily: FONT[800], fontSize: 22, letterSpacing: 1.2, color: C.ink },
-  iconBtn: { width: 40, height: 40, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: GLASS.borderHi },
+  iconBtn: { width: 44, height: 44, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
   splitRow: { flexDirection: 'row', paddingVertical: S.lg },
   splitCell: { flex: 1, alignItems: 'center', gap: 4 },
   divider: { width: 1, backgroundColor: GLASS.borderHi },
@@ -221,13 +219,11 @@ const styles = StyleSheet.create({
   selRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bonusRow: { flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md + 2 },
   bonusPlay: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
-  scrim: { backgroundColor: 'rgba(7,4,12,0.78)' },
-  sheetWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: S.md },
   sheet: { padding: S.xl, paddingTop: S.md },
   grab: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: GLASS.borderHi, marginBottom: S.lg },
   sheetLabel: { ...T.label, marginTop: S.xl, marginBottom: S.sm },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: GLASS.field, borderRadius: R.md, borderWidth: 1, borderColor: GLASS.borderHi, padding: 3 },
-  stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
-  smallBtn: { paddingHorizontal: S.md, height: 32, borderRadius: R.sm, borderWidth: 1, borderColor: GLASS.borderHi, backgroundColor: GLASS.field, justifyContent: 'center' },
+  stepBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
+  smallBtn: { paddingHorizontal: S.md, minHeight: 40, borderRadius: R.sm, borderWidth: 1, borderColor: GLASS.borderHi, backgroundColor: GLASS.field, justifyContent: 'center' },
   smallBtnText: { color: C.ink2, fontFamily: FONT[600], fontSize: 12.5 },
 });

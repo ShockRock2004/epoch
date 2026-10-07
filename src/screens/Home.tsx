@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  Easing, FadeIn, FadeInDown, FadeInLeft, FadeInRight, useAnimatedStyle, useSharedValue, withRepeat, withTiming,
+  Easing, FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODES, TOTAL } from '../data/plan';
@@ -9,6 +9,9 @@ import { useStore } from '../lib/store';
 import { dayNumber, PLAN_DAYS } from '../lib/schedule';
 import { C, FONT, GLASS, R, S, T } from '../theme';
 import { EpisodeCard } from '../components/EpisodeCard';
+import { EpisodeSheet } from '../components/EpisodeSheet';
+import { useBackdropScroll } from '../components/Backdrop';
+import { slideX } from '../components/Overlay';
 import { Glass } from '../components/Glass';
 import { IconChevron } from '../components/Icons';
 import { TopicArt, TOPIC_LABEL } from '../components/illustrations';
@@ -33,6 +36,8 @@ export function Home() {
   const clearance = useTabClearance();
   const [offset, setOffset] = useState(0); // pages of two episodes away from today
   const [dir, setDir] = useState<1 | -1>(1);
+  const [open, setOpen] = useState<number | null>(null); // index into the pair on screen
+  const onScroll = useBackdropScroll();
 
   // Today's pair is frozen for the day (carry-over included); the arrows page through the plan from there.
   const base = p.days[today]?.base ?? [];
@@ -70,10 +75,12 @@ export function Home() {
   }, [drift]);
   const driftStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -5 * drift.value }] }));
 
-  const enter = (dir > 0 ? FadeInRight : FadeInLeft).duration(280).easing(Easing.out(Easing.quad));
+  // Slide only: fading a glass card's parent makes Android re-layer and flash the blur.
+  const enter = slideX(dir > 0 ? 28 : -28);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingTop: insets.top + S.xl, paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
+    <>
+    <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingTop: insets.top + S.xl, paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
       {/* Topic icon, with paging arrows */}
       <View style={styles.heroRow}>
         <NavButton dir="left" enabled={canPrev} onPress={() => go(-1)} />
@@ -99,20 +106,20 @@ export function Home() {
           <Text style={{ color: C.faint }}>  /  {TOTAL}</Text>
         </Text>
         {offset !== 0 && (
-          <Pressable onPress={() => { haptic.nav(); setDir(offset > 0 ? -1 : 1); setOffset(0); }} hitSlop={8} accessibilityRole="button" style={styles.todayChip}>
+          <Pressable onPress={() => { haptic.nav(); setDir(offset > 0 ? -1 : 1); setOffset(0); }} hitSlop={10} accessibilityRole="button" style={styles.todayChip}>
             <Text style={styles.todayChipText}>BACK TO TODAY</Text>
           </Pressable>
         )}
       </View>
 
       <Animated.View key={nums.join('-')} entering={enter} style={styles.cards}>
-        {eps.map(ep => (
-          <EpisodeCard key={ep.n} ep={ep} done={!!p.done[ep.n]} onToggle={toggle} />
+        {eps.map((ep, i) => (
+          <EpisodeCard key={ep.n} ep={ep} done={!!p.done[ep.n]} onToggle={toggle} onOpen={() => setOpen(i)} />
         ))}
       </Animated.View>
 
       {(todayDone || allDone) && (
-        <Animated.View entering={FadeInDown.duration(300)} style={[styles.cards, { marginTop: S.md }]}>
+        <Animated.View entering={slideX(0)} style={[styles.cards, { marginTop: S.md }]}>
           <Glass style={styles.note}>
             <Text style={T.label}>{allDone ? 'PLAN COMPLETE' : 'TODAY'}</Text>
             <Text style={[T.title, { marginTop: 4 }]}>{allDone ? 'All 100 episodes done.' : "That's today done."}</Text>
@@ -122,7 +129,9 @@ export function Home() {
           </Glass>
         </Animated.View>
       )}
-    </ScrollView>
+    </Animated.ScrollView>
+    <EpisodeSheet list={eps} index={open} onIndex={setOpen} onClose={() => setOpen(null)} isDone={n => !!p.done[n]} onToggle={toggle} />
+    </>
   );
 }
 
@@ -143,12 +152,12 @@ function NavButton({ dir, enabled, onPress }: { dir: 'left' | 'right'; enabled: 
 
 const styles = StyleSheet.create({
   heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.xxl, marginTop: S.md },
-  navBtn: { width: 42, height: 42, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)', borderWidth: 1, borderColor: GLASS.borderHi },
+  navBtn: { width: 44, height: 44, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
   header: { alignItems: 'center', marginTop: S.xl },
   weekday: { fontFamily: FONT[500], fontSize: 15, color: C.ink, marginTop: 0, letterSpacing: 0.3 },
   section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.xl, marginTop: S.xxxl, marginBottom: S.md, minHeight: 28 },
-  todayChip: { paddingHorizontal: S.md, height: 28, borderRadius: R.sm, justifyContent: 'center', backgroundColor: C.black, borderWidth: 1, borderColor: GLASS.borderHi },
-  todayChipText: { fontFamily: FONT[700], fontSize: 9.5, letterSpacing: 1.4, color: C.ink },
+  todayChip: { paddingHorizontal: S.md, minHeight: 32, borderRadius: R.sm, justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
+  todayChipText: { fontFamily: FONT[700], fontSize: 11, letterSpacing: 1.1, color: C.ink },
   cards: { paddingHorizontal: S.lg, gap: S.md },
   note: { padding: S.lg },
 });

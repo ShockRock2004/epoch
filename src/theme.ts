@@ -42,16 +42,45 @@ export const C = {
 /** The signature gradient: magenta → violet → deep purple, left to right. */
 export const GRAD = ['#D13BF0', '#8E2DE2', '#4A0E8F'] as const;
 
-/** Glass: real expo-blur over the environment, a smoked tint, a white hairline and a faint top sheen. */
+/** Flat fills and lines used on top of glass (controls are never glass themselves). */
 export const GLASS = {
-  tint: 'rgba(22,19,30,0.50)',
-  tintSolid: '#110D18', // modals: a separate window, nothing behind to blur
-  field: 'rgba(255,255,255,0.05)', // input-like rows inside glass
-  border: 'rgba(255,255,255,0.10)',
-  borderHi: 'rgba(255,255,255,0.18)',
-  highlight: 'rgba(255,255,255,0.07)',
+  field: 'rgba(255,255,255,0.05)', // flat control on glass
+  fieldOn: 'rgba(255,255,255,0.09)', // pressed / focused control
+  border: 'rgba(255,255,255,0.09)',
+  borderHi: 'rgba(255,255,255,0.14)',
+  divider: 'rgba(255,255,255,0.06)',
+  specular: 'rgba(255,255,255,0.22)',
+  scatter: 'rgba(255,255,255,0.03)', // the faint milkiness that makes tint read as frost
   activeFill: '#FFFFFF',
-  intensity: 45,
+};
+
+/**
+ * Glass materials. Each blurs one of two layers:
+ * - 'backdrop': only the lit background (cards live in the scrolling content, so they can't blur it)
+ * - 'content': background + scrolling content (chrome, headers, sheets float above it)
+ *
+ * expo-blur on Android: native radius = intensity / reduction, and the native black overlay
+ * alpha = 0.75 × intensity / 100 (systemChromeMaterialDark). Low intensity + low reduction gives
+ * a strong blur without greying the glass. Below API 31 there is no blur, so `fallback` is opaque.
+ */
+export type MaterialName = 'card' | 'chrome' | 'header' | 'sheet' | 'scrim' | 'dock';
+export type Material = {
+  target: 'backdrop' | 'content';
+  intensity: number;
+  reduction: number;
+  tint: string;
+  fallback: string;
+  border: string | null;
+  specular: boolean;
+  elevation: number;
+};
+export const MATERIAL: Record<MaterialName, Material> = {
+  card: { target: 'backdrop', intensity: 26, reduction: 3, tint: 'rgba(24,18,36,0.22)', fallback: 'rgba(24,18,36,0.9)', border: 'rgba(255,255,255,0.09)', specular: true, elevation: 6 },
+  chrome: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(14,11,20,0.30)', fallback: 'rgba(14,11,20,0.94)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 10 },
+  header: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(10,8,14,0.40)', fallback: 'rgba(10,8,14,0.95)', border: null, specular: false, elevation: 0 },
+  sheet: { target: 'content', intensity: 34, reduction: 3, tint: 'rgba(16,12,24,0.48)', fallback: 'rgba(16,12,24,0.97)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 16 },
+  scrim: { target: 'content', intensity: 22, reduction: 3.5, tint: 'rgba(0,0,0,0.30)', fallback: 'rgba(5,4,7,0.82)', border: null, specular: false, elevation: 0 },
+  dock: { target: 'content', intensity: 30, reduction: 3, tint: 'rgba(20,14,30,0.42)', fallback: 'rgba(20,14,30,0.95)', border: 'rgba(255,255,255,0.12)', specular: true, elevation: 10 },
 };
 
 export const R = { sm: 8, md: 10, card: 14, lg: 18, pill: 999 };
@@ -67,7 +96,7 @@ export const FONT = {
 } as const;
 
 /** Type scale, modelled on the reference: magenta greeting, heavy white headline, tracked caps. */
-export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 'meta' | 'label' | 'greeting', TextStyle> = {
+export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 'meta' | 'label' | 'tag' | 'greeting', TextStyle> = {
   greeting: { fontFamily: FONT[600], fontSize: 14, lineHeight: 20, color: C.accent },
   display: { fontFamily: FONT[700], fontSize: 31, lineHeight: 38, letterSpacing: 0.5, color: C.ink },
   heading: { fontFamily: FONT[800], fontSize: 26, lineHeight: 32, letterSpacing: 0.2, color: C.ink },
@@ -75,7 +104,8 @@ export const T: Record<'display' | 'heading' | 'title' | 'body' | 'secondary' | 
   body: { fontFamily: FONT[500], fontSize: 14, lineHeight: 21, color: C.ink2 },
   secondary: { fontFamily: FONT[500], fontSize: 13, lineHeight: 19, color: C.ink2 },
   meta: { fontFamily: FONT[500], fontSize: 12, lineHeight: 17, color: C.muted },
-  label: { fontFamily: FONT[600], fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4, color: C.label },
+  label: { fontFamily: FONT[600], fontSize: 11, lineHeight: 15, letterSpacing: 1.1, color: C.label },
+  tag: { fontFamily: FONT[600], fontSize: 12, lineHeight: 16, color: C.label },
 };
 
 /** Phase colours appear only as small dots. */
