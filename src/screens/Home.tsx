@@ -18,17 +18,17 @@ import { TopicArt, TOPIC_LABEL } from '../components/illustrations';
 import { useTabClearance } from '../components/TabBar';
 import { haptic } from '../lib/haptics';
 
-/** "2026-10-07" → { date: "7 OCTOBER", weekday: "Wednesday" } */
+/** "2026-10-07" → { date: "7 October", weekday: "Wednesday" } */
 const dateParts = (k: string) => {
   const [y, m, d] = k.split('-').map(Number);
   const dt = new Date(y, m - 1, d);
   return {
-    date: `${d} ${dt.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase()}`,
+    date: `${d} ${dt.toLocaleDateString('en-GB', { month: 'long' })}`,
     weekday: dt.toLocaleDateString('en-GB', { weekday: 'long' }),
   };
 };
 
-const HERO = 150;
+const HERO = 200;
 
 export function Home() {
   const { p, today, toggle } = useStore();
@@ -81,6 +81,12 @@ export function Home() {
   return (
     <>
     <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingTop: insets.top + S.xl, paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
+      {/* Day and date: small, at the top, so the topic icon carries the screen */}
+      <View style={styles.header}>
+        <Text style={styles.greeting}>{dayLabel} · {TOPIC_LABEL[topic]}</Text>
+        <Text style={styles.date} accessibilityRole="header">{weekday}, {date}</Text>
+      </View>
+
       {/* Topic icon, with paging arrows */}
       <View style={styles.heroRow}>
         <NavButton dir="left" enabled={canPrev} onPress={() => go(-1)} />
@@ -90,13 +96,6 @@ export function Home() {
           </Animated.View>
         </Animated.View>
         <NavButton dir="right" enabled={canNext} onPress={() => go(1)} />
-      </View>
-
-      {/* Greeting · date · weekday, like "Hi Laura / Welcome / to smart home" */}
-      <View style={styles.header}>
-        <Text style={T.greeting}>{dayLabel} · {TOPIC_LABEL[topic]}</Text>
-        <Text style={[T.display, { marginTop: S.xs }]} accessibilityRole="header">{date}</Text>
-        <Text style={styles.weekday}>{weekday}</Text>
       </View>
 
       {/* Episodes */}
@@ -151,11 +150,12 @@ function NavButton({ dir, enabled, onPress }: { dir: 'left' | 'right'; enabled: 
 }
 
 const styles = StyleSheet.create({
-  heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.xxl, marginTop: S.md },
+  heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.lg, marginTop: S.lg },
   navBtn: { width: 44, height: 44, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
-  header: { alignItems: 'center', marginTop: S.xl },
-  weekday: { fontFamily: FONT[500], fontSize: 15, color: C.ink, marginTop: 0, letterSpacing: 0.3 },
-  section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.xl, marginTop: S.xxxl, marginBottom: S.md, minHeight: 28 },
+  header: { alignItems: 'center', marginTop: S.xs },
+  greeting: { ...T.greeting, fontSize: 13, lineHeight: 18 },
+  date: { fontFamily: FONT[700], fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 2, letterSpacing: 0.2 },
+  section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: S.xl, marginTop: S.xxl, marginBottom: S.md, minHeight: 28 },
   todayChip: { paddingHorizontal: S.md, minHeight: 32, borderRadius: R.sm, justifyContent: 'center', backgroundColor: GLASS.field, borderWidth: 1, borderColor: GLASS.borderHi },
   todayChipText: { fontFamily: FONT[700], fontSize: 11, letterSpacing: 1.1, color: C.ink },
   cards: { paddingHorizontal: S.lg, gap: S.md },
