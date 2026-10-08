@@ -24,7 +24,7 @@
 <img src="docs/screenshots/home.jpg" width="23%" alt="Home: today's two episodes" />
 <img src="docs/screenshots/episode.jpg" width="23%" alt="Episode sheet: summary and videos" />
 <img src="docs/screenshots/search.jpg" width="23%" alt="Search across all 100 episodes" />
-<img src="docs/screenshots/progress.jpg" width="23%" alt="Progress rings and streak" />
+<img src="docs/screenshots/progress.jpg" width="23%" alt="Progress and streak" />
 
 </div>
 
@@ -43,7 +43,7 @@ Treat it as a first look. By the end you should know the main ideas and how they
 | Today | Two episodes a day, shown as cards. If you only finish one, the other moves to tomorrow. The arrows page through the rest of the plan when you want to go ahead. |
 | Episodes | Each card lists its videos with exact time ranges, and **Start** opens YouTube at the right second. Tap a card for a short summary, or hold it to mark it done. |
 | Search | Find any of the 100 episodes by name, topic, channel or summary, and filter by phase or status. |
-| Progress | Apple Watch style rings for classic ML and for deep learning and LLMs, plus hours watched and your streak. |
+| Progress | How far you are through classic ML and through deep learning and LLMs, plus hours watched and your streak. |
 
 Your progress stays on the phone. There is no account, and the app only talks to the network when it opens YouTube.
 
