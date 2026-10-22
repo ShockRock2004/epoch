@@ -1,7 +1,7 @@
 import { EPISODES, TOTAL, RING_CLUSTERS, ringMembers } from '../src/data/plan';
 import {
-  Progress, fresh, ensureDay, todayView, reveal, toggleDone, dayNumber, addDays,
-  activity, streaks, ringProgress, hoursWatched,
+  Progress, fresh, ensureDay, toggleDone, dayNumber, addDays,
+  activity, streaks, ringProgress, hoursWatched, goHyper, modeOf, planDays,
 } from '../src/lib/schedule';
 
 const D1 = '2026-10-07';
@@ -50,54 +50,23 @@ describe('dates', () => {
 });
 
 describe('daily queue', () => {
+  const shown = (p: Progress, k: string) => p.days[k].base;
+
   test('first day shows episodes 1 and 2', () => {
-    const p = ensureDay(fresh(D1), D1);
-    expect(todayView(p, D1).shown).toEqual([1, 2]);
+    expect(shown(ensureDay(fresh(D1), D1), D1)).toEqual([1, 2]);
   });
 
   test('carry-over: finishing only ep 1 shows 2 and 3 tomorrow', () => {
     let p = ensureDay(fresh(D1), D1);
     p = done(p, [1]);
     const d2 = addDays(D1, 1);
-    p = ensureDay(p, d2);
-    expect(todayView(p, d2).shown).toEqual([2, 3]);
+    expect(shown(ensureDay(p, d2), d2)).toEqual([2, 3]);
   });
 
   test('base is frozen for the day, so finished cards stay put', () => {
     let p = ensureDay(fresh(D1), D1);
     p = done(p, [1]);
-    p = ensureDay(p, D1);
-    expect(todayView(p, D1).shown).toEqual([1, 2]);
-  });
-
-  test('reveal appears only when all shown are done, and at most twice', () => {
-    let p = ensureDay(fresh(D1), D1);
-    expect(todayView(p, D1).canReveal).toBe(false);
-    p = done(p, [1, 2]);
-    expect(todayView(p, D1).canReveal).toBe(true);
-    p = reveal(p, D1);
-    expect(todayView(p, D1).shown).toEqual([1, 2, 3]);
-    expect(todayView(p, D1).canReveal).toBe(false);
-    p = done(p, [3]);
-    expect(todayView(p, D1).canReveal).toBe(true);
-    p = reveal(p, D1);
-    p = done(p, [4]);
-    const v = todayView(p, D1);
-    expect(v.shown).toEqual([1, 2, 3, 4]);
-    expect(v.canReveal).toBe(false);
-    expect(v.allDoneForToday).toBe(true);
-  });
-
-  test('reveal is a no-op when not allowed', () => {
-    const p = ensureDay(fresh(D1), D1);
-    expect(reveal(p, D1)).toBe(p);
-  });
-
-  test('reveal skips episodes already finished out of order', () => {
-    let p = ensureDay(fresh(D1), D1);
-    p = done(p, [1, 2, 3]);
-    p = reveal(p, D1);
-    expect(todayView(p, D1).shown).toEqual([1, 2, 4]);
+    expect(shown(ensureDay(p, D1), D1)).toEqual([1, 2]);
   });
 
   test('toggle undoes a completion', () => {
@@ -107,16 +76,11 @@ describe('daily queue', () => {
     expect(p.done[1]).toBeUndefined();
   });
 
-  test('end of plan: nothing left → finished', () => {
+  test('end of plan: only the last episode is left', () => {
     let p = fresh(D1);
     p = done(p, EPISODES.map(e => e.n).filter(n => n !== 100));
     const day = addDays(D1, 60);
-    p = ensureDay(p, day);
-    expect(todayView(p, day).shown).toEqual([100]);
-    p = done(p, [100], day);
-    const v = todayView(p, day);
-    expect(v.finishedPlan).toBe(true);
-    expect(v.canReveal).toBe(false);
+    expect(shown(ensureDay(p, day), day)).toEqual([100]);
   });
 });
 
@@ -153,5 +117,33 @@ describe('stats', () => {
   test('hours watched sums finished episode lengths', () => {
     const p = done(fresh(D1), [1]);
     expect(hoursWatched(p)).toBeCloseTo(EPISODES[0].secs / 3600);
+  });
+});
+
+describe('hyper mode', () => {
+  test('old saves without a mode are normal', () => {
+    const { mode, ...old } = fresh(D1);
+    expect(modeOf(old)).toBe('normal');
+    expect(planDays(old)).toBe(50);
+  });
+
+  test('hyper is four a day over 25 days', () => {
+    const p = ensureDay(fresh(D1, 'hyper'), D1);
+    expect(p.days[D1].base).toEqual([1, 2, 3, 4]);
+    expect(planDays(p)).toBe(25);
+    expect(activity(p)).toHaveLength(25);
+  });
+
+  test('switching mid-day tops today up to four, skipping finished episodes', () => {
+    let p = done(ensureDay(fresh(D1), D1), [1, 3]);
+    p = goHyper(p, D1);
+    expect(modeOf(p)).toBe('hyper');
+    expect(p.days[D1].base).toEqual([1, 2, 4, 5]);
+  });
+
+  test('hyper is one-way and survives a reset', () => {
+    const p = goHyper(ensureDay(fresh(D1), D1), D1);
+    expect(goHyper(p, D1)).toBe(p);
+    expect(modeOf(fresh(D1, modeOf(p)))).toBe('hyper');
   });
 });

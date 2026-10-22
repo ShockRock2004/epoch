@@ -1,6 +1,9 @@
-import React from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle, StyleProp } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, {
+  Easing, SharedValue, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming,
+} from 'react-native-reanimated';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Episode, Seg } from '../data/plan';
 import { PHASES } from '../data/plan';
@@ -12,8 +15,12 @@ import { toast } from './Overlay';
 import { haptic } from '../lib/haptics';
 import { openSeg } from '../lib/youtube';
 
-const HOLD_MS = 650;
-const HOLD_DELAY = 180; // a quick tap never shows the fill
+const HOLD_MS = 700;
+const HOLD_DELAY = 150; // a quick tap never shows the charge
+const ARC_R = 17;
+const ARC_LEN = 2 * Math.PI * ARC_R;
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type Props = {
   ep: Episode;
@@ -48,8 +55,13 @@ export function Bullets({ items, gap = S.sm }: { items: string[]; gap?: number }
   );
 }
 
-/** The visible way to finish an episode: a ring that fills white. */
-export function CheckButton({ done, onPress, label }: { done: boolean; onPress: () => void; label: string }) {
+type Charge = { hold: SharedValue<number>; burst: SharedValue<number>; id: string; undo: boolean };
+
+/**
+ * The visible way to finish an episode: a ring that fills white.
+ * With a charge, holding the card draws a gradient arc around it, and finishing sends out a pulse.
+ */
+export function CheckButton({ done, onPress, label, charge }: { done: boolean; onPress: () => void; label: string; charge?: Charge }) {
   return (
     <Pressable
       onPress={onPress}
@@ -60,40 +72,123 @@ export function CheckButton({ done, onPress, label }: { done: boolean; onPress: 
       accessibilityLabel={label}
     >
       {({ pressed }) => (
-        <View style={[styles.check, done && styles.checkOn, pressed && { transform: [{ scale: 0.9 }] }]}>
-          {done && <IconCheck size={15} color={C.onLight} strokeWidth={2.8} />}
-        </View>
+        <>
+          {charge && <ChargeRing charge={charge} />}
+          <View style={[styles.check, done && styles.checkOn, pressed && { transform: [{ scale: 0.9 }] }]}>
+            {done && <IconCheck size={15} color={C.onLight} strokeWidth={2.8} />}
+          </View>
+        </>
       )}
     </Pressable>
   );
 }
 
+function ChargeRing({ charge: { hold, burst, id, undo } }: { charge: Charge }) {
+  const arc = useAnimatedProps(() => ({ strokeDashoffset: ARC_LEN * (1 - hold.value) }));
+  const arcWrap = useAnimatedStyle(() => ({ opacity: hold.value > 0.01 ? 1 : 0, transform: [{ scale: 1 + 0.06 * hold.value }] }));
+  const pulse = useAnimatedStyle(() => ({
+    opacity: burst.value > 0 && burst.value < 1 ? 0.9 * (1 - burst.value) : 0,
+    transform: [{ scale: 1 + 1.5 * burst.value }],
+  }));
+  const bloom = useAnimatedStyle(() => ({
+    opacity: burst.value > 0 && burst.value < 1 ? 0.55 * (1 - burst.value) : 0.4 * hold.value,
+    transform: [{ scale: 0.8 + 0.6 * Math.max(hold.value, burst.value) }],
+  }));
+
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Animated.View style={[styles.bloom, bloom, undo && { backgroundColor: 'rgba(255,255,255,0.18)' }]} />
+      <Animated.View style={[styles.pulse, pulse]} />
+      <Animated.View style={[styles.arc, arcWrap]}>
+        <Svg width={ARC_R * 2 + 4} height={ARC_R * 2 + 4}>
+          <Defs>
+            <SvgGradient id={id} x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor={undo ? '#FFFFFF' : '#F0ABFC'} />
+              <Stop offset="1" stopColor={undo ? '#9B8BB4' : '#8E2DE2'} />
+            </SvgGradient>
+          </Defs>
+          <AnimatedCircle
+            cx={ARC_R + 2}
+            cy={ARC_R + 2}
+            r={ARC_R}
+            stroke={`url(#${id})`}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={`${ARC_LEN} ${ARC_LEN}`}
+            rotation={-90}
+            origin={`${ARC_R + 2}, ${ARC_R + 2}`}
+            animatedProps={arc}
+          />
+        </Svg>
+      </Animated.View>
+    </View>
+  );
+}
+
 export function EpisodeCard({ ep, done, onToggle, onOpen, minHeight = 168, style }: Props) {
-  const hold = useSharedValue(0);
+  const hold = useSharedValue(0); // 0 → 1 while the card is held
+  const burst = useSharedValue(0); // 0 → 1 once, right after it is marked done
+  const pop = useSharedValue(0);
+  const width = useSharedValue(0);
+  const [undo, setUndo] = useState(done); // the tone is fixed when the hold starts, so it can't flip mid-pulse
+  const buzz = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isReview = !!ep.review;
   const multi = ep.segs.length > 1;
   const toggle = () => toggleWithUndo(ep.n, done, onToggle);
 
-  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 - 0.012 * hold.value }] }));
-  const fillStyle = useAnimatedStyle(() => ({ width: `${hold.value * 100}%`, opacity: hold.value > 0.001 ? 1 : 0 }));
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 - 0.018 * hold.value + 0.012 * pop.value }] }));
+  // A glow that charges from the check ring's corner, and a violet rim that lights with it.
+  const glowStyle = useAnimatedStyle(() => ({ opacity: hold.value }));
+  const rimStyle = useAnimatedStyle(() => ({ opacity: burst.value > 0 && burst.value < 1 ? Math.max(hold.value, 1 - burst.value) : hold.value }));
+  // One diagonal sheen across the glass when an episode is finished.
+  const sheenStyle = useAnimatedStyle(() => ({
+    opacity: burst.value > 0 && burst.value < 1 ? 1 : 0,
+    transform: [{ translateX: -0.6 * width.value + 1.9 * width.value * burst.value }, { rotate: '18deg' }],
+  }));
 
-  // Holding is a shortcut for the check button, with a soft violet sweep while it fills.
+  const clearBuzz = () => { if (buzz.current) clearTimeout(buzz.current); buzz.current = null; };
+
+  // Holding is a shortcut for the check button: the ring charges, then the card confirms.
   const onPressIn = () => {
-    hold.value = withDelay(HOLD_DELAY, withTiming(1, { duration: HOLD_MS - HOLD_DELAY, easing: Easing.inOut(Easing.quad) }));
+    setUndo(done);
+    hold.value = withDelay(HOLD_DELAY, withTiming(1, { duration: HOLD_MS - HOLD_DELAY, easing: Easing.inOut(Easing.cubic) }));
+    buzz.current = setTimeout(haptic.hold, HOLD_DELAY);
   };
-  const onPressOut = () => { hold.value = withTiming(0, { duration: 200 }); };
-  const onLongPress = () => { toggle(); hold.value = withTiming(0, { duration: 280 }); };
+  const onPressOut = () => { clearBuzz(); hold.value = withTiming(0, { duration: 220, easing: Easing.out(Easing.cubic) }); };
+  const onLongPress = () => {
+    clearBuzz();
+    const finishing = !done;
+    toggle();
+    hold.value = withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) });
+    pop.value = withSequence(withTiming(1, { duration: 130, easing: Easing.out(Easing.quad) }), withTiming(0, { duration: 420, easing: Easing.out(Easing.back(2)) }));
+    if (finishing) {
+      burst.value = 0;
+      burst.value = withTiming(1, { duration: 640, easing: Easing.out(Easing.cubic) });
+    }
+  };
 
-  const fill = (
-    <Animated.View style={[styles.fill, fillStyle]}>
-      <LinearGradient
-        colors={done ? ['rgba(242,179,126,0)', 'rgba(242,179,126,0.18)'] : ['rgba(209,59,240,0.04)', 'rgba(142,45,226,0.38)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={[styles.fillEdge, { backgroundColor: done ? C.warn : C.accent }]} />
-    </Animated.View>
+  const underlay = (
+    <>
+      <Animated.View style={[StyleSheet.absoluteFill, glowStyle]}>
+        <LinearGradient
+          colors={undo ? ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.03)', 'rgba(255,255,255,0)'] : ['rgba(209,59,240,0.42)', 'rgba(142,45,226,0.16)', 'rgba(74,14,143,0)']}
+          locations={[0, 0.45, 1]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0.1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View style={[styles.sheen, sheenStyle]}>
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.13)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View style={[styles.rim, { borderColor: undo ? 'rgba(255,255,255,0.32)' : C.accentLine }, rimStyle]} />
+    </>
   );
 
   const action = isReview ? (
@@ -105,7 +200,7 @@ export function EpisodeCard({ ep, done, onToggle, onOpen, minHeight = 168, style
   );
 
   return (
-    <Animated.View style={[pressStyle, style]}>
+    <Animated.View style={[pressStyle, style]} onLayout={e => { width.value = e.nativeEvent.layout.width; }}>
       <Pressable
         onPress={() => { haptic.nav(); onOpen(); }}
         onPressIn={onPressIn}
@@ -116,7 +211,7 @@ export function EpisodeCard({ ep, done, onToggle, onOpen, minHeight = 168, style
         accessibilityLabel={`Episode ${ep.n}: ${ep.name}.${done ? ' Done.' : ''} Opens the details.`}
       >
         {/* Finished episodes recede into denser glass; the next one stays clear. */}
-        <Glass style={{ minHeight }} tint={done ? 'rgba(18,14,26,0.46)' : undefined} underlay={fill}>
+        <Glass style={{ minHeight }} tint={done ? 'rgba(18,14,26,0.46)' : undefined} underlay={underlay}>
           <View style={[styles.pad, done && styles.dim]}>
             <View style={styles.labelRow}>
               <View style={[styles.dot, { backgroundColor: PHASE_COLOR[ep.phase] }]} />
@@ -161,7 +256,7 @@ export function EpisodeCard({ ep, done, onToggle, onOpen, minHeight = 168, style
           </View>
           {/* Outside the dimmed block so the control stays at full strength. */}
           <View style={styles.checkSlot}>
-            <CheckButton done={done} onPress={toggle} label={done ? `Mark episode ${ep.n} not done` : `Mark episode ${ep.n} done`} />
+            <CheckButton done={done} onPress={toggle} charge={{ hold, burst, id: `charge-${ep.n}`, undo }} label={done ? `Mark episode ${ep.n} not done` : `Mark episode ${ep.n} done`} />
           </View>
         </Glass>
       </Pressable>
@@ -183,10 +278,13 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bullet: { flexDirection: 'row', gap: S.md, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.pink, marginTop: 8 },
-  fill: { position: 'absolute', left: 0, top: 0, bottom: 0, overflow: 'hidden' },
-  fillEdge: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 2 },
+  sheen: { position: 'absolute', top: '-50%', bottom: '-50%', left: 0, width: '34%' },
+  rim: { ...StyleSheet.absoluteFill, borderRadius: R.card, borderWidth: 1.5 },
   checkSlot: { position: 'absolute', top: S.sm, right: S.sm },
   checkHit: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  arc: { position: 'absolute', left: 24 - ARC_R - 2, top: 24 - ARC_R - 2 },
+  pulse: { position: 'absolute', left: 10, top: 10, width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: C.accent },
+  bloom: { position: 'absolute', left: 4, top: 4, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(209,59,240,0.35)' },
   check: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.38)', alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: C.light, borderColor: C.light },
 });

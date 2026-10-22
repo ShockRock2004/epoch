@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -252,7 +252,6 @@ export function Search() {
         onToggle={toggle}
       />
 
-      {/* More filters */}
       <Sheet visible={sheet} onClose={() => setSheet(false)} style={styles.sheet}>
         <View style={styles.grab} />
         <Text style={T.title}>Filters</Text>

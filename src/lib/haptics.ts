@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-// Same approach as Grindz: Android goes through performHapticFeedback, which is tuned per
+// Android goes through performHapticFeedback, which is tuned per
 // device and obeys the system touch-feedback setting. Names are semantic, not strengths.
 const A = Haptics.AndroidHaptics;
 const isAndroid = Platform.OS === 'android';

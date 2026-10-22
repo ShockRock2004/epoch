@@ -2,17 +2,24 @@
 // so nothing here depends on the device timezone.
 import { EPISODES, TOTAL, RING_CLUSTERS, ringMembers } from '../data/plan';
 
-export type DayLog = { base: number[]; revealed: number[] };
+export type Mode = 'normal' | 'hyper';
 export type Progress = {
   start: string;
   done: Record<number, string>; // episode → day it was finished
-  days: Record<string, DayLog>;
+  days: Record<string, { base: number[] }>; // each day's episodes, frozen the first time the day is seen
+  mode?: Mode; // missing in saves from before hyper mode, which means normal
 };
 
-export const PLAN_DAYS = 50;
-export const MAX_REVEALS = 2;
+// Normal: 2 a day for 50 days. Hyper: 4 a day for 25 days.
+const MODES: Record<Mode, { perDay: number; days: number }> = {
+  normal: { perDay: 2, days: TOTAL / 2 },
+  hyper: { perDay: 4, days: TOTAL / 4 },
+};
+export const modeOf = (p: Progress): Mode => p.mode ?? 'normal';
+export const perDay = (p: Progress) => MODES[modeOf(p)].perDay;
+export const planDays = (p: Progress) => MODES[modeOf(p)].days;
 
-export const fresh = (start: string): Progress => ({ start, done: {}, days: {} });
+export const fresh = (start: string, mode: Mode = 'normal'): Progress => ({ start, done: {}, days: {}, mode });
 
 export const dateKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -40,36 +47,17 @@ const unfinished = (p: Progress, skip: number[] = []) =>
 
 export const ensureDay = (p: Progress, today: string): Progress => {
   if (p.days[today]) return p;
-  return { ...p, days: { ...p.days, [today]: { base: unfinished(p).slice(0, 2), revealed: [] } } };
+  return { ...p, days: { ...p.days, [today]: { base: unfinished(p).slice(0, perDay(p)) } } };
 };
 
-export type TodayView = {
-  shown: number[];
-  canReveal: boolean;
-  allDoneForToday: boolean; // both reveals used and everything shown is finished
-  finishedPlan: boolean;
-};
-
-export const todayView = (p: Progress, today: string): TodayView => {
-  const log = p.days[today] ?? { base: [], revealed: [] };
-  const shown = [...log.base, ...log.revealed];
-  const shownDone = shown.every(n => p.done[n]);
-  const left = unfinished(p, shown).length;
-  const finishedPlan = Object.keys(p.done).length >= TOTAL;
-  return {
-    shown,
-    canReveal: shownDone && log.revealed.length < MAX_REVEALS && left > 0,
-    allDoneForToday: shownDone && log.revealed.length >= MAX_REVEALS && !finishedPlan,
-    finishedPlan,
-  };
-};
-
-export const reveal = (p: Progress, today: string): Progress => {
-  const v = todayView(p, today);
-  if (!v.canReveal) return p;
-  const next = unfinished(p, v.shown)[0];
-  const log = p.days[today];
-  return { ...p, days: { ...p.days, [today]: { ...log, revealed: [...log.revealed, next] } } };
+// One way only: once hyper, always hyper. Today's base is topped up to four straight away.
+export const goHyper = (p: Progress, today: string): Progress => {
+  if (modeOf(p) === 'hyper') return p;
+  const q: Progress = { ...p, mode: 'hyper' };
+  const log = q.days[today];
+  if (!log) return ensureDay(q, today);
+  const extra = unfinished(q, log.base).slice(0, perDay(q) - log.base.length);
+  return { ...q, days: { ...q.days, [today]: { base: [...log.base, ...extra] } } };
 };
 
 export const toggleDone = (p: Progress, n: number, today: string): Progress => {
@@ -79,8 +67,8 @@ export const toggleDone = (p: Progress, n: number, today: string): Progress => {
   return { ...p, done };
 };
 
-// Episodes finished on each of the 50 plan days.
-export const activity = (p: Progress, days = PLAN_DAYS) => {
+// Episodes finished on each plan day.
+export const activity = (p: Progress, days = planDays(p)) => {
   const out = new Array(days).fill(0);
   for (const k of Object.values(p.done)) {
     const i = diffDays(p.start, k);

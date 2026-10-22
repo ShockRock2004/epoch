@@ -46,7 +46,6 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
     <Sheet visible={!!ep} onClose={onClose} wrapStyle={{ top: insets.top + S.xl }} style={styles.sheet}>
       {ep && (
         <>
-          {/* Top bar */}
           <View style={styles.bar}>
             <View style={styles.stepper}>
               <BarButton onPress={() => step(-1)} enabled={index! > 0} label="Previous episode"><IconChevron dir="left" size={17} color={C.ink} strokeWidth={2} /></BarButton>
@@ -58,7 +57,6 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
 
           <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
             <Animated.View key={ep.n} entering={(dir.current > 0 ? FadeInRight : FadeInLeft).duration(220)}>
-              {/* Identity */}
               <View style={styles.idRow}>
                 <View style={styles.tile}><TopicGlyph topic={ep.topic} size={26} /></View>
                 <View style={{ flex: 1 }}>
@@ -71,7 +69,6 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
               </View>
               <Text style={styles.title}>{ep.name}</Text>
 
-              {/* Facts */}
               <View style={styles.pills}>
                 <Pill><IconClock size={13} color={C.ink2} /><Text style={styles.pillText}>{ep.review ? '~20 min' : fmtMins(ep.secs)}</Text></Pill>
                 <Pill><Text style={styles.pillText}>{ep.review ? 'Review' : `${ep.segs.length} video${ep.segs.length > 1 ? 's' : ''}`}</Text></Pill>
@@ -81,11 +78,9 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
                 )}
               </View>
 
-              {/* Summary */}
               <Text style={styles.section}>WHAT YOU’LL LEARN</Text>
               <Bullets items={ep.points} gap={S.md - 2} />
 
-              {/* Videos */}
               {ep.segs.length > 0 && (
                 <>
                   <Text style={styles.section}>VIDEOS</Text>
@@ -112,7 +107,6 @@ export function EpisodeSheet({ list, index, onIndex, onClose, isDone, onToggle }
                 </>
               )}
 
-              {/* Review questions */}
               {ep.review && (
                 <>
                   <Text style={styles.section}>QUESTIONS</Text>

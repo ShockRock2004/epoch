@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing, FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming,
@@ -6,7 +6,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODES, TOTAL } from '../data/plan';
 import { useStore } from '../lib/store';
-import { dayNumber, PLAN_DAYS } from '../lib/schedule';
+import { dayNumber, perDay, planDays } from '../lib/schedule';
 import { C, FONT, GLASS, R, S, T } from '../theme';
 import { EpisodeCard } from '../components/EpisodeCard';
 import { EpisodeSheet } from '../components/EpisodeSheet';
@@ -34,16 +34,17 @@ export function Home() {
   const { p, today, toggle } = useStore();
   const insets = useSafeAreaInsets();
   const clearance = useTabClearance();
-  const [offset, setOffset] = useState(0); // pages of two episodes away from today
+  const [offset, setOffset] = useState(0); // pages of a day's episodes away from today
   const [dir, setDir] = useState<1 | -1>(1);
-  const [open, setOpen] = useState<number | null>(null); // index into the pair on screen
+  const [open, setOpen] = useState<number | null>(null); // index into the episodes on screen
   const onScroll = useBackdropScroll();
 
-  // Today's pair is frozen for the day (carry-over included); the arrows page through the plan from there.
+  // Today's set is frozen for the day (carry-over included); the arrows page through the plan from there.
+  const k = perDay(p);
   const base = p.days[today]?.base ?? [];
   const anchor = base[0] ?? TOTAL;
-  const start = Math.min(Math.max(anchor + 2 * offset, 1), TOTAL);
-  const nums = offset === 0 && base.length ? base : [start, start + 1].filter(n => n <= TOTAL);
+  const start = Math.min(Math.max(anchor + k * offset, 1), TOTAL);
+  const nums = offset === 0 && base.length ? base : Array.from({ length: k }, (_, i) => start + i).filter(n => n <= TOTAL);
   const eps = nums.map(n => EPISODES[n - 1]);
   const canPrev = nums[0] > 1;
   const canNext = nums[nums.length - 1] < TOTAL;
@@ -57,7 +58,7 @@ export function Home() {
 
   const dayLabel = offset !== 0
     ? offset > 0 ? 'Up next' : 'Earlier'
-    : day < 1 ? `Starts in ${-day} day${day === -1 ? '' : 's'}` : `Day ${day}${day > PLAN_DAYS ? ' · Overtime' : ''}`;
+    : day < 1 ? `Starts in ${-day} day${day === -1 ? '' : 's'}` : `Day ${day}${day > planDays(p) ? ' · Overtime' : ''}`;
 
   const go = (d: 1 | -1) => {
     if ((d > 0 && !canNext) || (d < 0 && !canPrev)) return;
@@ -87,7 +88,6 @@ export function Home() {
         <Text style={styles.date} accessibilityRole="header">{weekday}, {date}</Text>
       </View>
 
-      {/* Topic icon, with paging arrows */}
       <View style={styles.heroRow}>
         <NavButton dir="left" enabled={canPrev} onPress={() => go(-1)} />
         <Animated.View style={driftStyle}>
@@ -98,7 +98,6 @@ export function Home() {
         <NavButton dir="right" enabled={canNext} onPress={() => go(1)} />
       </View>
 
-      {/* Episodes */}
       <View style={styles.section}>
         <Text style={T.label}>
           {nums.length > 1 ? `EPISODES ${nums[0]}–${nums[nums.length - 1]}` : `EPISODE ${nums[0]}`}
