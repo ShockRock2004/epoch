@@ -1,4 +1,3 @@
-import React from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop, Ellipse } from 'react-native-svg';
 import { C } from '../theme';

@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BONUS, EPISODES, TOTAL } from '../data/plan';
 import { useStore, DEFAULT_START } from '../lib/store';
-import { activity, addDays, diffDays, episodesOn, hoursWatched, ringProgress, streaks, totalHours, PLAN_DAYS } from '../lib/schedule';
+import { activity, addDays, diffDays, episodesOn, hoursWatched, modeOf, perDay, planDays, ringProgress, streaks, totalHours } from '../lib/schedule';
 import { C, FONT, GLASS, GRAD, R, RING_COLORS, S, T, fmtClock } from '../theme';
 import { Glass } from '../components/Glass';
 import { Rings } from '../components/Rings';
 import { ActivityChart } from '../components/ActivityChart';
-import { BlackButton } from '../components/Buttons';
+import { BlackButton, GradientButton } from '../components/Buttons';
+import { ModeSlider } from '../components/ModeSlider';
 import { useTabClearance } from '../components/TabBar';
 import { Sheet } from '../components/Overlay';
 import { useBackdropScroll } from '../components/Backdrop';
@@ -24,14 +25,17 @@ const shortDate = (k: string) => {
 };
 
 export function Progress() {
-  const { p, today, setStart, reset } = useStore();
+  const { p, today, setStart, goHyper, reset } = useStore();
   const insets = useSafeAreaInsets();
   const clearance = useTabClearance();
   const { width } = useWindowDimensions();
   const [sel, setSel] = useState<number | null>(null);
   const [settings, setSettings] = useState(false);
   const [armed, setArmed] = useState(false);
+  const [confirmHyper, setConfirmHyper] = useState(false);
   const onScroll = useBackdropScroll();
+  const hyper = modeOf(p) === 'hyper';
+  const days = planDays(p);
 
   const clusters = ringProgress(p);
   const counts = activity(p);
@@ -40,7 +44,7 @@ export function Progress() {
   const done = Object.keys(p.done).length;
   const hrs = hoursWatched(p);
   const chartW = Math.min(width, 640) - S.lg * 2 - S.xl * 2;
-  const dayCaption = todayIdx < 0 ? 'NOT STARTED YET' : todayIdx >= PLAN_DAYS ? 'PLAN DAYS OVER' : `DAY ${todayIdx + 1} OF ${PLAN_DAYS}`;
+  const dayCaption = todayIdx < 0 ? 'NOT STARTED YET' : todayIdx >= days ? 'PLAN DAYS OVER' : `DAY ${todayIdx + 1} OF ${days}`;
 
   const selDay = sel != null ? addDays(p.start, sel) : null;
   const selEps = selDay ? episodesOn(p, selDay) : [];
@@ -61,6 +65,28 @@ export function Progress() {
           <Pressable onPress={() => { haptic.nav(); setArmed(false); setSettings(true); }} hitSlop={10} style={styles.iconBtn} accessibilityLabel="Settings">
             <IconGear size={18} color={C.ink} />
           </Pressable>
+        </View>
+
+        {/* Pace: normal (50 days) or hyper (25 days). Hyper is one-way. */}
+        <View style={{ gap: S.sm }}>
+          <ModeSlider
+            value={hyper || confirmHyper ? 'hyper' : 'normal'}
+            locked={hyper}
+            onPick={m => { haptic.select(); setConfirmHyper(m === 'hyper'); }}
+          />
+          {confirmHyper && !hyper ? (
+            <Glass style={styles.confirm}>
+              <Text style={[T.secondary, { color: C.ink }]}>4 episodes a day, done in 25 days. Once on, Hyper can't be switched back to Normal.</Text>
+              <View style={{ flexDirection: 'row', gap: S.sm }}>
+                <BlackButton label="Cancel" height={42} style={{ flex: 1 }} onPress={() => { haptic.undo(); setConfirmHyper(false); }} />
+                <GradientButton label="Go Hyper" height={42} style={{ flex: 1 }} onPress={() => { haptic.success(); goHyper(); setConfirmHyper(false); }} />
+              </View>
+            </Glass>
+          ) : (
+            <Text style={[T.meta, { marginLeft: S.xs }]}>
+              {hyper ? 'Hyper · 4 episodes a day · 25 days · locked in' : 'Normal · 2 episodes a day · 50 days'}
+            </Text>
+          )}
         </View>
 
         {/* Apple-Watch-style rings, one stack per half of the plan */}
@@ -94,7 +120,6 @@ export function Progress() {
           </Glass>
         ))}
 
-        {/* Split card: hours | streak */}
         <Glass>
           <View style={styles.splitRow}>
             <View style={styles.splitCell}>
@@ -117,13 +142,13 @@ export function Progress() {
         <Glass style={styles.card}>
           <View style={styles.clusterHead}>
             <Text style={styles.clusterTitle}>ACTIVITY</Text>
-            <Text style={T.meta}>50 days</Text>
+            <Text style={T.meta}>{days} days</Text>
           </View>
           <View style={[styles.rule, { marginBottom: S.md }]} />
-          <ActivityChart counts={counts} todayIndex={todayIdx} selected={sel} onSelect={i => { haptic.select(); setSel(sel === i ? null : i); }} width={chartW} />
+          <ActivityChart counts={counts} todayIndex={todayIdx} selected={sel} onSelect={i => { haptic.select(); setSel(sel === i ? null : i); }} target={perDay(p)} width={chartW} />
           <View style={styles.key}>
-            <LinearGradient colors={GRAD} style={styles.keySw} /><Text style={T.meta}>2+ episodes</Text>
-            <View style={[styles.keySw, { backgroundColor: 'rgba(199,125,255,0.45)' }]} /><Text style={T.meta}>1</Text>
+            <LinearGradient colors={GRAD} style={styles.keySw} /><Text style={T.meta}>{perDay(p)}+ episodes</Text>
+            <View style={[styles.keySw, { backgroundColor: 'rgba(199,125,255,0.45)' }]} /><Text style={T.meta}>{perDay(p) > 2 ? `1–${perDay(p) - 1}` : '1'}</Text>
             <View style={styles.keyLine} /><Text style={T.meta}>target</Text>
           </View>
           {selDay && (
@@ -208,6 +233,7 @@ const styles = StyleSheet.create({
   legendVal: { fontFamily: FONT[700], fontSize: 15, fontVariant: ['tabular-nums'], marginTop: 1 },
   legendOf: { fontFamily: FONT[500], fontSize: 11, color: C.muted },
   card: { padding: S.xl },
+  confirm: { padding: S.lg, gap: S.md },
   clusterHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   clusterTitle: { fontFamily: FONT[800], fontSize: 12, letterSpacing: 1.6, color: C.ink },
   rule: { height: 1, backgroundColor: GLASS.borderHi, marginTop: S.sm },

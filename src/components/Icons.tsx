@@ -1,6 +1,5 @@
 // Hand-drawn 24×24 stroke icons. No icon library.
-import React from 'react';
-import Svg, { Path, Circle, Rect, Line, Polyline, Defs, LinearGradient, Stop, G } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 
 type P = { size?: number; color?: string; strokeWidth?: number };
 const base = ({ size = 22, color = '#fff', strokeWidth = 1.8 }: P) => ({
@@ -53,52 +52,23 @@ export const IconGear = (p: P) => (
   </Svg>
 );
 
-export const IconFlip = (p: P) => (
+/** Normal mode: a speedometer at a steady pace. */
+export const IconGauge = (p: P) => (
   <Svg {...base(p)}>
-    <Path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7" /><Polyline points="20 4 20 8.7 15.3 8.7" />
-    <Path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3" /><Polyline points="4 20 4 15.3 8.7 15.3" />
+    <Path d="M4.5 17.5a8.5 8.5 0 1 1 15 0" /><Line x1="12" y1="14" x2="8.6" y2="10" /><Circle cx="12" cy="14" r="1.2" />
   </Svg>
 );
 
-export const IconSpark = (p: P) => (
-  <Svg {...base(p)}>
-    <Path d="M12 3.5 13.8 9a2 2 0 0 0 1.3 1.3l5.4 1.7-5.4 1.7a2 2 0 0 0-1.3 1.3L12 20.5l-1.8-5.5a2 2 0 0 0-1.3-1.3L3.5 12l5.4-1.7A2 2 0 0 0 10.2 9Z" />
-  </Svg>
+/** Hyper mode: a lightning bolt. */
+export const IconBolt = (p: P) => (
+  <Svg {...base(p)}><Path d="M13.5 2.5 5 13.5h6l-1 8 8.5-11h-6Z" /></Svg>
 );
 
-export const IconQuiz = (p: P) => (
-  <Svg {...base(p)}>
-    <Circle cx="12" cy="12" r="8.5" /><Path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.7" /><Circle cx="12" cy="16.8" r="0.4" fill={p.color ?? '#fff'} />
-  </Svg>
-);
-
-export const IconFlame = (p: P) => (
-  <Svg {...base(p)}>
-    <Path d="M12 21a6 6 0 0 0 6-6c0-3.5-2.6-5.4-3.4-8.5-.3 1.8-1.3 3-2.6 3.6C12.3 7.5 11 5 8.8 3.5 9 7.5 6 9.6 6 15a6 6 0 0 0 6 6Z" />
-  </Svg>
+export const IconLock = (p: P) => (
+  <Svg {...base(p)}><Rect x="5" y="10.5" width="14" height="10" rx="2" /><Path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></Svg>
 );
 
 export const IconChevron = (p: P & { dir?: 'left' | 'right' | 'down' }) => {
   const d = p.dir === 'left' ? 'M15 5l-7 7 7 7' : p.dir === 'down' ? 'M5 9l7 7 7-7' : 'M9 5l7 7-7 7';
   return <Svg {...base(p)}><Path d={d} /></Svg>;
 };
-
-/** The Epoch mark: a ring broken into an orbit, with one bright node. */
-export const EpochMark = ({ size = 28 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 48 48">
-    <Defs>
-      <LinearGradient id="em" x1="0" y1="0" x2="1" y2="1">
-        <Stop offset="0" stopColor="#A9AFFF" /><Stop offset="1" stopColor="#5B63E8" />
-      </LinearGradient>
-    </Defs>
-    <G fill="none" stroke="url(#em)" strokeWidth={4} strokeLinecap="round">
-      <Path d="M38.5 15A17 17 0 1 0 41 24" />
-      <Path d="M17 24h14" />
-    </G>
-    <Circle cx="38.5" cy="15" r="4.5" fill="#E3E6FF" />
-  </Svg>
-);
-
-export const Dot = ({ color, size = 8 }: { color: string; size?: number }) => (
-  <Svg width={size} height={size}><Rect width={size} height={size} rx={size / 2} fill={color} /></Svg>
-);

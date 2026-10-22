@@ -43,7 +43,7 @@ Treat it as a first look. By the end you should know the main ideas and how they
 | Today | Two episodes a day, shown as cards. If you only finish one, the other moves to tomorrow. The arrows page through the rest of the plan when you want to go ahead. |
 | Episodes | Each card lists its videos with exact time ranges, and **Start** opens YouTube at the right second. Tap a card for a short summary, or hold it to mark it done. |
 | Search | Find any of the 100 episodes by name, topic, channel or summary, and filter by phase or status. |
-| Progress | How far you are through classic ML and through deep learning and LLMs, plus hours watched and your streak. |
+| Progress | How far you are through classic ML and through deep learning and LLMs, plus hours watched and your streak. The slider at the top switches from Normal (two a day, 50 days) to Hyper (four a day, 25 days). Hyper is one-way: once on, it stays on. |
 
 Your progress stays on the phone. There is no account, and the app only talks to the network when it opens YouTube.
 

@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Progress, fresh, ensureDay, reveal as revealFn, toggleDone as toggleFn, dateKey } from './schedule';
+import { Progress, fresh, ensureDay, goHyper as goHyperFn, modeOf, toggleDone as toggleFn, dateKey } from './schedule';
 
 const KEY = 'epoch:v1';
 export const DEFAULT_START = '2026-10-07';
@@ -11,8 +11,8 @@ type Store = {
   p: Progress;
   today: string;
   toggle: (n: number) => void;
-  reveal: () => void;
   setStart: (k: string) => void;
+  goHyper: () => void;
   reset: () => void;
 };
 
@@ -54,11 +54,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [p]);
 
   const toggle = useCallback((n: number) => setP(s => toggleFn(s, n, today)), [today]);
-  const reveal = useCallback(() => setP(s => revealFn(s, today)), [today]);
   const setStart = useCallback((k: string) => setP(s => ({ ...s, start: k })), []);
-  const reset = useCallback(() => setP(s => ensureDay(fresh(s.start), today)), [today]);
+  const goHyper = useCallback(() => setP(s => goHyperFn(s, today)), [today]);
+  // Reset clears progress, never the mode.
+  const reset = useCallback(() => setP(s => ensureDay(fresh(s.start, modeOf(s)), today)), [today]);
 
-  const value = useMemo(() => ({ ready, p, today, toggle, reveal, setStart, reset }), [ready, p, today, toggle, reveal, setStart, reset]);
+  const value = useMemo(() => ({ ready, p, today, toggle, setStart, goHyper, reset }), [ready, p, today, toggle, setStart, goHyper, reset]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

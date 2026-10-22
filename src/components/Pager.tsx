@@ -1,4 +1,3 @@
-import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { C, FONT, R, S } from '../theme';
 import { IconChevron } from './Icons';
